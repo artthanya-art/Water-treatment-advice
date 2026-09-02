@@ -161,6 +161,7 @@
       <div class="chip" data-val="food">อุตสาหกรรมอาหาร</div>
       <div class="chip" data-val="chemical">อุตสาหกรรมเคมี/สี</div>
       <div class="chip" data-val="hospital">โรงพยาบาล</div>
+      <div class="chip" data-val="ceramic">เซรามิก/แร่/หิน</div>
     </div>
   </div>
 </section>
@@ -424,7 +425,8 @@ const wwDefaults = {
   domestic: {bod:300, cod:500, tss:250, oil:0},
   food:     {bod:800, cod:1500, tss:500, oil:150},
   chemical: {bod:400, cod:3000, tss:300, oil:20},
-  hospital: {bod:250, cod:500, tss:200, oil:0}
+  hospital: {bod:250, cod:500, tss:200, oil:0},
+  ceramic:  {bod:50, cod:200, tss:2000, oil:0}
 };
 const userEditedFields = {bod:false, cod:false, tss:false, oil:false};
 ['bod','cod','tss','oil'].forEach(id=>{
@@ -728,6 +730,9 @@ function calculate(){
   }
   if(wwType==='chemical'){
     badges.push({cls:'amber', txt:'อุตสาหกรรมเคมี/สี — อาจมีโลหะหนัก/สารพิษที่แอปนี้ยังไม่คำนวณการกำจัด ควรตรวจสอบและออกแบบระบบกำจัดโลหะหนักแยกต่างหากตามกฎหมายที่เกี่ยวข้อง'});
+  }
+  if(wwType==='ceramic'){
+    badges.push({cls:'amber', txt:'เซรามิก/แร่/หิน — ปัญหาหลักคือ TSS (ตะกอนดิน/เคลย์/glaze) ไม่ใช่สารอินทรีย์ เน้นระบบเคมี+ตกตะกอน/กรองเป็นหลัก ระบบชีวภาพ (AS/MBBR/MBR) ที่แนะนำด้านล่างอาจไม่จำเป็นเต็มรูปแบบหากมีแต่ TSS ล้วนๆ — ควรตรวจสอบโลหะหนักจากน้ำเคลือบ (ตะกั่ว แคดเมียม โครเมียม) แยกต่างหากด้วย'});
   }
 
   // Sludge — process-specific yield formulas
