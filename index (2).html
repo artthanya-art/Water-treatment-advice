@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบแนะนำการออกแบบบำบัดน้ำเสีย</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F5F2EA;
+    --panel:#FFFFFF;
+    --ink:#1F2C33;
+    --ink-soft:#5B6B72;
+    --line:#D8D2C4;
+    --line-strong:#B9B0A0;
+    --steel:#2F5D74;
+    --steel-deep:#1D3E4F;
+    --amber:#B36A22;
+    --amber-bg:#F3E4D0;
+    --sage:#4B6E4E;
+    --sage-bg:#E4EBDE;
+    --rust:#A13D2E;
+    --rust-bg:#F3DCD6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif;
+    padding:20px 16px 60px; max-width:720px; margin:0 auto;
+    line-height:1.55;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  header{border-bottom:2px solid var(--ink); padding-bottom:14px; margin-bottom:22px;}
+  header .kicker{font-size:12px; letter-spacing:0.04em; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;}
+  header h1{font-size:21px; font-weight:600; margin:4px 0 0;}
+  section{margin-bottom:26px;}
+  .step-label{
+    display:flex; align-items:baseline; gap:8px; margin-bottom:12px;
+  }
+  .step-label .num{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft); border:1px solid var(--line-strong); padding:1px 7px; border-radius:3px;}
+  .step-label h2{font-size:16px; font-weight:600; margin:0;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:13px; color:var(--ink-soft); margin-bottom:5px;}
+  .field .hint{font-size:11.5px; color:var(--ink-soft); margin-top:4px;}
+  input[type=number], select{
+    width:100%; padding:9px 10px; border:1px solid var(--line-strong); border-radius:4px;
+    background:var(--panel); color:var(--ink); font-size:15px; font-family:'IBM Plex Mono',monospace;
+  }
+  select{font-family:'IBM Plex Sans Thai',sans-serif;}
+  input:focus, select:focus{outline:2px solid var(--steel); outline-offset:1px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .chip-group{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    border:1px solid var(--line-strong); border-radius:4px; padding:8px 12px; font-size:13.5px;
+    background:var(--panel); cursor:pointer; user-select:none;
+  }
+  .chip.active{background:var(--steel-deep); color:#fff; border-color:var(--steel-deep);}
+  button.calc{
+    width:100%; padding:13px; background:var(--steel-deep); color:#fff; border:none; border-radius:4px;
+    font-size:15px; font-weight:600; cursor:pointer; margin-top:6px;
+  }
+  button.calc:active{transform:scale(0.99);}
+  .error{color:var(--rust); font-size:12.5px; margin-top:5px; display:none;}
+  .results{display:none;}
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:16px;
+    margin-bottom:14px;
+  }
+  .panel-title{font-size:12px; letter-spacing:0.03em; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; margin-bottom:10px; text-transform:uppercase;}
+  .badge{
+    display:inline-block; font-size:11.5px; padding:3px 9px; border-radius:3px; font-family:'IBM Plex Mono',monospace;
+    margin-bottom:8px;
+  }
+  .badge.amber{background:var(--amber-bg); color:var(--amber);}
+  .badge.sage{background:var(--sage-bg); color:var(--sage);}
+  .badge.rust{background:var(--rust-bg); color:var(--rust);}
+  .train{display:flex; flex-direction:column; gap:0;}
+  .stage{
+    display:flex; gap:12px; padding:10px 0; border-bottom:1px dashed var(--line);
+  }
+  .stage:last-child{border-bottom:none;}
+  .stage .idx{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); width:20px; flex-shrink:0; padding-top:2px;
+  }
+  .stage .body strong{font-size:14.5px; display:block;}
+  .stage .body span{font-size:13px; color:var(--ink-soft);}
+  table.spec{width:100%; border-collapse:collapse; font-size:13px;}
+  table.spec th{
+    text-align:left; font-family:'IBM Plex Mono',monospace; font-weight:500; color:var(--ink-soft);
+    font-size:11.5px; padding:6px 6px; border-bottom:1px solid var(--line-strong);
+  }
+  table.spec td{padding:7px 6px; border-bottom:1px solid var(--line); font-family:'IBM Plex Mono',monospace;}
+  table.spec td.label{font-family:'IBM Plex Sans Thai',sans-serif;}
+  ul.equip{margin:0; padding-left:18px; font-size:13.5px;}
+  ul.equip li{margin-bottom:6px;}
+  .note{
+    font-size:12.5px; color:var(--ink-soft); background:var(--amber-bg); border-left:3px solid var(--amber);
+    padding:9px 11px; border-radius:3px; margin-top:4px;
+  }
+  .disclaimer{
+    font-size:12px; color:var(--ink-soft); border-top:1px solid var(--line); padding-top:12px; margin-top:20px;
+  }
+  .adv-toggle{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border:1px solid var(--line-strong); border-radius:6px; padding:12px 14px; background:var(--panel);
+    cursor:pointer;
+  }
+  .adv-toggle .lbl{font-size:14px; font-weight:500;}
+  .adv-toggle .sub{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+  .switch{
+    width:42px; height:24px; border-radius:12px; background:var(--line-strong); position:relative; flex-shrink:0;
+    transition:background 0.15s;
+  }
+  .switch.on{background:var(--steel-deep);}
+  .switch::after{
+    content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%;
+    background:#fff; transition:left 0.15s;
+  }
+  .switch.on::after{left:20px;}
+  .adv-panel{display:none; margin-top:14px;}
+  .adv-panel.open{display:block;}
+  .field .field-note{font-size:11.5px; color:var(--ink-soft); margin-top:3px;}
+  .subhead{font-size:12.5px; font-weight:500; color:var(--steel-deep); margin:16px 0 10px; padding-top:12px; border-top:1px solid var(--line);}
+  .subhead:first-child{border-top:none; padding-top:0; margin-top:0;}
+  .equip-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line);}
+  .equip-row:last-child{border-bottom:none;}
+  .equip-row .left{display:flex; align-items:flex-start; gap:9px; flex:1; min-width:0;}
+  .equip-row input[type=checkbox]{margin-top:3px; flex-shrink:0; width:18px; height:18px; accent-color:var(--steel-deep);}
+  .equip-row .name{font-size:13.5px;}
+  .equip-row .opt-tag{font-size:10.5px; color:var(--amber); margin-left:6px;}
+  .equip-row .price{font-family:'IBM Plex Mono',monospace; font-size:13px; white-space:nowrap; flex-shrink:0;}
+  .total-bar{
+    border-top:2px solid var(--ink); margin-top:14px; padding-top:10px;
+    display:flex; justify-content:space-between; align-items:baseline;
+  }
+  .total-bar .lbl{font-size:14px; font-weight:500;}
+  .total-bar .val{font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">WASTEWATER TREATMENT ADVISOR — เครื่องมือประเมินเบื้องต้น</div>
+  <h1>แนะนำระบบบำบัดน้ำเสียเบื้องต้น</h1>
+</header>
+
+<section>
+  <div class="step-label"><span class="num">01</span><h2>ประเภทน้ำเสีย</h2></div>
+  <div class="field">
+    <div class="chip-group" id="wwType">
+      <div class="chip active" data-val="domestic">ครัวเรือน / อาคาร</div>
+      <div class="chip" data-val="food">อุตสาหกรรมอาหาร</div>
+      <div class="chip" data-val="chemical">อุตสาหกรรมเคมี/สี</div>
+      <div class="chip" data-val="hospital">โรงพยาบาล</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="step-label"><span class="num">02</span><h2>ปริมาณและคุณภาพน้ำเสีย</h2></div>
+  <div class="field">
+    <label>อัตราการไหล Q (m³/day)</label>
+    <input type="number" id="flow" value="100" min="0">
+  </div>
+  <div class="row2">
+    <div class="field">
+      <label>BOD (mg/L)</label>
+      <input type="number" id="bod" value="300" min="0">
+    </div>
+    <div class="field">
+      <label>COD (mg/L)</label>
+      <input type="number" id="cod" value="500" min="0">
+    </div>
+  </div>
+  <div class="row2">
+    <div class="field">
+      <label>TSS (mg/L)</label>
+      <input type="number" id="tss" value="250" min="0">
+    </div>
+    <div class="field">
+      <label>น้ำมัน/ไขมัน Oil &amp; Grease (mg/L) — ใส่ 0 ถ้าไม่มี</label>
+      <input type="number" id="oil" value="0" min="0">
+    </div>
+  </div>
+  <div class="error" id="errMsg">กรุณากรอกค่า Q, BOD, COD ให้มากกว่า 0</div>
+</section>
+
+<section>
+  <div class="step-label"><span class="num">03</span><h2>มาตรฐานน้ำทิ้งและพื้นที่</h2></div>
+  <div class="field">
+    <label>มาตรฐานที่ต้องบรรลุ</label>
+    <select id="standard">
+      <option value="sewer">ปล่อยเข้าท่อรวม/นิคมอุตสาหกรรม (ผ่อนปรนสุด — BOD≤500, TSS≤500 mg/L โดยประมาณ)</option>
+      <option value="standard">ปล่อยลงแหล่งน้ำสาธารณะ — มาตรฐานทั่วไป (BOD≤20, COD≤120, TSS≤50 mg/L)</option>
+      <option value="strict">ปล่อยลงแหล่งน้ำสาธารณะ — เขตอนุรักษ์/ชุมชนหนาแน่น (BOD≤10-15, TSS≤30 mg/L)</option>
+      <option value="reuse">ต้องการนำน้ำกลับมาใช้ใหม่ (Reuse) — เข้มงวดสุด (BOD≤5, TSS≤5 mg/L)</option>
+    </select>
+    <div class="field-note">ตัวเลขอ้างอิงคร่าวๆ ตามแนวทางประกาศกระทรวงอุตสาหกรรม/มาตรฐานน้ำทิ้งทั่วไปของไทย มาตรฐานจริงขึ้นกับประเภทกิจการและพื้นที่ ควรตรวจสอบกับหน่วยงานที่เกี่ยวข้องก่อนออกแบบจริง</div>
+  </div>
+  <div class="field">
+    <label>พื้นที่ติดตั้งที่มี</label>
+    <select id="space">
+      <option value="ample">มีพื้นที่เพียงพอ</option>
+      <option value="limited">พื้นที่จำกัด</option>
+    </select>
+  </div>
+</section>
+
+<section>
+  <div class="step-label"><span class="num">04</span><h2>โหมดวิศวกร (ทางเลือก)</h2></div>
+  <div class="adv-toggle" id="advToggle">
+    <div>
+      <div class="lbl">เปิดพารามิเตอร์ออกแบบขั้นสูง</div>
+      <div class="sub">ปรับ F/M, MLSS, HRT, OLR, SLR เอง + คำนวณออกซิเจน/Blower + N,P removal</div>
+    </div>
+    <div class="switch" id="advSwitch"></div>
+  </div>
+
+  <div class="adv-panel" id="advPanel">
+
+    <div class="subhead">พารามิเตอร์ออกแบบ (ค่าเริ่มต้นตามหลักวิศวกรรมทั่วไป — แก้ไขได้)</div>
+    <div class="row2">
+      <div class="field">
+        <label>EQ Tank HRT (ชม.)</label>
+        <input type="number" id="p_eqHrt" value="6" min="0.5" step="0.5">
+      </div>
+      <div class="field">
+        <label>F/M Ratio (kgBOD/kgMLSS·day)</label>
+        <input type="number" id="p_fm" value="0.1" min="0.01" step="0.01">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>MLSS (mg/L)</label>
+        <input type="number" id="p_mlss" value="3500" min="500" step="100">
+      </div>
+      <div class="field">
+        <label>SRT / อายุตะกอน (วัน)</label>
+        <input type="number" id="p_srt" value="15" min="1" step="1">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Clarifier SLR (m³/m²·day)</label>
+        <input type="number" id="p_slr" value="20" min="5" step="1">
+      </div>
+      <div class="field">
+        <label>UASB OLR (kgCOD/m³·day)</label>
+        <input type="number" id="p_olr" value="5" min="1" step="0.5">
+      </div>
+    </div>
+
+    <div class="subhead">ความต้องการออกซิเจน / Blower</div>
+    <div class="row2">
+      <div class="field">
+        <label>α — Alpha factor (field/clean water O₂ transfer)</label>
+        <input type="number" id="p_alpha" value="0.65" min="0.3" max="1" step="0.05">
+      </div>
+      <div class="field">
+        <label>SAE — ประสิทธิภาพเครื่องเติมอากาศ (kgO₂/kWh)</label>
+        <input type="number" id="p_sae" value="1.5" min="0.5" step="0.1">
+      </div>
+    </div>
+    <div class="field">
+      <label>อุณหภูมิออกแบบ (°C)</label>
+      <input type="number" id="p_temp" value="25" min="5" max="45" step="1">
+    </div>
+
+    <div class="subhead">ธาตุอาหาร N / P (ใส่เฉพาะถ้าต้องการคำนวณการกำจัด)</div>
+    <div class="row2">
+      <div class="field">
+        <label>TKN ในน้ำเสีย (mg/L) — เว้นว่างถ้าไม่ต้องการคำนวณ</label>
+        <input type="number" id="p_tkn" value="" min="0" step="1">
+      </div>
+      <div class="field">
+        <label>Total P ในน้ำเสีย (mg/L) — เว้นว่างถ้าไม่ต้องการคำนวณ</label>
+        <input type="number" id="p_tp" value="" min="0" step="0.5">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>เป้าหมาย N ในน้ำทิ้ง (mg/L)</label>
+        <input type="number" id="p_ntarget" value="20" min="0" step="1">
+      </div>
+      <div class="field">
+        <label>เป้าหมาย P ในน้ำทิ้ง (mg/L)</label>
+        <input type="number" id="p_ptarget" value="2" min="0" step="0.5">
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<button class="calc" onclick="calculate()">คำนวณและแนะนำระบบ</button>
+
+<div class="results" id="results">
+
+  <section>
+    <div class="step-label"><span class="num">05</span><h2>สรุประบบที่แนะนำ</h2></div>
+    <div class="panel">
+      <div id="badges"></div>
+      <div class="panel-title">แผนผังกระบวนการ (Treatment Train)</div>
+      <div class="train" id="trainList"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-label"><span class="num">06</span><h2>ขนาดถัง/หน่วยบำบัด (ประมาณการ)</h2></div>
+    <div class="panel">
+      <table class="spec" id="sizingTable">
+        <thead><tr><th>หน่วย</th><th>ขนาด</th><th>เกณฑ์ที่ใช้</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-label"><span class="num">07</span><h2>อุปกรณ์และราคาประมาณการ</h2></div>
+    <div class="panel">
+      <div class="panel-title">งานโยธา (Civil Works) — จำเป็นทั้งหมด</div>
+      <table class="spec" id="civilTable">
+        <thead><tr><th>รายการ</th><th>ราคาก่อสร้าง</th><th>บำรุงรักษา/ปี</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="panel-title" style="margin-top:16px;">เครื่องจักร/อุปกรณ์ไฟฟ้า — ยกเลิกรายการที่เป็น Option ได้</div>
+      <div id="equipList"></div>
+      <div class="total-bar">
+        <span class="lbl">รวมราคาโปรเจคโดยประมาณ</span>
+        <span class="val mono" id="totalPrice">฿0</span>
+      </div>
+      <div class="total-bar" style="border-top:1px solid var(--line); margin-top:6px; padding-top:8px;">
+        <span class="lbl" style="font-size:13px; color:var(--ink-soft);">ค่าบำรุงรักษาโดยประมาณต่อปี</span>
+        <span class="val mono" id="totalMaint" style="font-size:16px; color:var(--steel-deep);">฿0/ปี</span>
+      </div>
+      <div class="note" style="margin-top:10px;">ราคาก่อสร้าง/อุปกรณ์เป็นประมาณการอย่างหยาบจากค่าเฉลี่ยตลาดทั่วไป ไม่รวมค่าออกแบบ ค่าติดตั้ง ค่าขนส่ง ภาษี ค่าดำเนินการขออนุญาต และ contingency<br><br>ค่าบำรุงรักษา/ปี คิดเป็น % ของราคาแต่ละรายการ (งานโยธา ~1.5%/ปี, เครื่องจักรทั่วไป ~5-6%/ปี, เมมเบรน MBR ~12%/ปี, เครื่องรีดตะกอน ~7%/ปี) ครอบคลุมเฉพาะอะไหล่/ซ่อมบำรุงเครื่องจักรเท่านั้น — ค่าไฟ/สารเคมี/แรงงาน ดูเพิ่มเติมด้านล่าง</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-label"><span class="num">08</span><h2>ค่าดำเนินการต่อปี (OPEX)</h2></div>
+    <div class="panel">
+      <table class="spec" id="opexTable"><tbody></tbody></table>
+      <div class="total-bar">
+        <span class="lbl">รวม OPEX โดยประมาณต่อปี</span>
+        <span class="val mono" id="totalOpexAll">฿0/ปี</span>
+      </div>
+      <div class="note" style="margin-top:10px;" id="opexNote"></div>
+      <div class="note" style="margin-top:10px; background:var(--sage-bg); border-left-color:var(--sage);">
+        <strong>ทำไมไม่รวม CAPEX กับ OPEX เป็นตัวเลขเดียว:</strong> CAPEX (ราคาก่อสร้าง/อุปกรณ์) เป็นเงินลงทุนครั้งเดียวตอนเริ่มโปรเจค ส่วน OPEX เป็นค่าใช้จ่ายที่เกิดซ้ำทุกปีตลอดอายุการใช้งานระบบ การบวกรวมกันเป็นก้อนเดียวจะทำให้ตัวเลขสื่อความหมายผิด (เหมือนเอาค่าใช้จ่าย 1 ครั้ง ไปบวกกับค่าใช้จ่ายรายปีคูณ 1 ปี) — ในการประเมินความคุ้มค่าโปรเจคจริง ควรใช้ OPEX ต่อปีคูณอายุการใช้งานระบบ (เช่น 15-20 ปี) แล้วคิดมูลค่าปัจจุบัน (NPV) แยกจาก CAPEX
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-label"><span class="num">09</span><h2>NPV / มูลค่าปัจจุบันของค่าใช้จ่ายตลอดโครงการ</h2></div>
+    <div class="panel">
+      <div class="row2">
+        <div class="field">
+          <label>จำนวนปีที่ต้องการคำนวณ (อายุโครงการ)</label>
+          <input type="number" id="npvYears" value="15" min="1" max="50" step="1" oninput="updateNPV()">
+        </div>
+        <div class="field">
+          <label>อัตราคิดลด Discount Rate (%/ปี)</label>
+          <input type="number" id="npvRate" value="7" min="0" max="30" step="0.5" oninput="updateNPV()">
+        </div>
+      </div>
+      <table class="spec" id="npvTable"><tbody></tbody></table>
+      <div class="total-bar">
+        <span class="lbl">Total Cost of Ownership (TCO / NPV รวม)</span>
+        <span class="val mono" id="npvTotal">฿0</span>
+      </div>
+      <div class="note" style="margin-top:10px;">
+        <strong>สูตร:</strong> PV(OPEX) = OPEX ต่อปี × [1 − (1+r)⁻ⁿ] / r โดย n = จำนวนปี, r = อัตราคิดลด (แปลงเป็นทศนิยม)<br>
+        TCO = CAPEX + PV(OPEX)<br><br>
+        <strong>สมมติฐาน:</strong> OPEX คงที่ทุกปีตลอดโครงการ (ยังไม่ปรับตามเงินเฟ้อ/ค่าไฟที่อาจเพิ่มขึ้นในอนาคต) และไม่ได้หักค่าซาก (salvage value) หรือคิดค่าเปลี่ยนอุปกรณ์ใหญ่ระหว่างทาง (เช่น เปลี่ยนเมมเบรน MBR รอบใหญ่ตอนปีที่ 8-10) — ตัวเลขนี้เหมาะสำหรับเปรียบเทียบทางเลือกระบบเบื้องต้นเท่านั้น
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-label"><span class="num">10</span><h2>ตะกอนที่เกิดขึ้น</h2></div>
+    <div class="panel" id="sludgePanel"></div>
+  </section>
+
+  <section class="adv-result" id="oxygenSection" style="display:none;">
+    <div class="step-label"><span class="num">11</span><h2>ความต้องการออกซิเจนและ Blower</h2></div>
+    <div class="panel" id="oxygenPanel"></div>
+  </section>
+
+  <section class="adv-result" id="nutrientSection" style="display:none;">
+    <div class="step-label"><span class="num">12</span><h2>การกำจัดไนโตรเจน/ฟอสฟอรัส</h2></div>
+    <div class="panel" id="nutrientPanel"></div>
+  </section>
+
+  <section>
+    <div class="step-label"><span class="num">13</span><h2>ส่งออกรายงาน</h2></div>
+    <div class="panel">
+      <button class="calc" onclick="printReport()">พิมพ์รายงานเป็น PDF</button>
+    </div>
+  </section>
+
+  <div class="disclaimer">
+    ผลลัพธ์นี้เป็นการประมาณการเบื้องต้นจากหลักวิศวกรรมทั่วไป (rule of thumb) เพื่อช่วยกำหนดทิศทางเท่านั้น
+    การออกแบบจริงต้องอาศัยข้อมูลตรวจวัดภาคสนามที่ครบถ้วน การทดสอบ (bench/pilot test) และการรับรองแบบโดยวิศวกรสิ่งแวดล้อมที่มีใบอนุญาต
+    ก่อนนำไปก่อสร้างจริง
+  </div>
+
+</div>
+
+<script>
+let wwType = 'domestic';
+
+const wwDefaults = {
+  domestic: {bod:300, cod:500, tss:250, oil:0},
+  food:     {bod:800, cod:1500, tss:500, oil:150},
+  chemical: {bod:400, cod:3000, tss:300, oil:20},
+  hospital: {bod:250, cod:500, tss:200, oil:0}
+};
+const userEditedFields = {bod:false, cod:false, tss:false, oil:false};
+['bod','cod','tss','oil'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{ userEditedFields[id] = true; });
+});
+
+function applyWwDefaults(type){
+  const d = wwDefaults[type] || wwDefaults.domestic;
+  ['bod','cod','tss','oil'].forEach(id=>{
+    if(!userEditedFields[id]) document.getElementById(id).value = d[id];
+  });
+}
+
+document.getElementById('wwType').addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  document.querySelectorAll('#wwType .chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  wwType = chip.dataset.val;
+  applyWwDefaults(wwType);
+});
+
+let advOn = false;
+document.getElementById('advToggle').addEventListener('click', ()=>{
+  advOn = !advOn;
+  document.getElementById('advSwitch').classList.toggle('on', advOn);
+  document.getElementById('advPanel').classList.toggle('open', advOn);
+});
+
+function fmt(n, d=1){
+  if(!isFinite(n)) return '-';
+  return Number(n.toFixed(d)).toLocaleString('en-US');
+}
+
+function fmtTHB(n){
+  return '฿' + Math.round(n).toLocaleString('en-US');
+}
+
+function tierPrice(x, small, medium, large){
+  // Continuous power-law (log-log) interpolation anchored at reference points:
+  // x=50 -> small, x=500 -> medium, x=2000 -> large (extrapolated beyond with same slope)
+  const x1=50, x2=500, x3=2000;
+  const xx = Math.max(x, 0.01);
+  const lx = Math.log(xx);
+  const lx1=Math.log(x1), lx2=Math.log(x2), lx3=Math.log(x3);
+  const lp1=Math.log(small), lp2=Math.log(medium), lp3=Math.log(large);
+  if(xx<=x2){
+    const n = (lp2-lp1)/(lx2-lx1);
+    return Math.exp(lp1 + n*(lx-lx1));
+  } else {
+    const n = (lp3-lp2)/(lx3-lx2);
+    return Math.exp(lp2 + n*(lx-lx2));
+  }
+}
+
+const CIVIL_MAINT_RATE = 0.015; // 1.5%/year of civil capex — structural upkeep, painting, minor repairs
+
+function updateTotal(){
+  let capexTotal = window.currentCivilTotal || 0;
+  let maintTotal = window.currentCivilMaint || 0;
+  document.querySelectorAll('#equipList input[type=checkbox]').forEach(chk=>{
+    if(chk.checked){
+      capexTotal += parseFloat(chk.dataset.price);
+      maintTotal += parseFloat(chk.dataset.maint);
+    }
+  });
+  const elP = document.getElementById('totalPrice');
+  const elM = document.getElementById('totalMaint');
+  if(elP) elP.textContent = fmtTHB(capexTotal);
+  if(elM) elM.textContent = fmtTHB(maintTotal) + '/ปี';
+
+  const opexFixed = window.currentOpexFixed || 0;
+  const opexAllTotal = opexFixed + maintTotal;
+  const elOpexAll = document.getElementById('totalOpexAll');
+  if(elOpexAll) elOpexAll.textContent = fmtTHB(opexAllTotal) + '/ปี';
+
+  window.currentCapexTotal = capexTotal;
+  window.currentOpexAllTotal = opexAllTotal;
+
+  updateNPV();
+}
+
+function updateNPV(){
+  const npvTableEl = document.getElementById('npvTable');
+  if(!npvTableEl) return;
+  const capex = window.currentCapexTotal || 0;
+  const opexAnnual = window.currentOpexAllTotal || 0;
+  const yearsRaw = parseFloat(document.getElementById('npvYears').value);
+  const rateRaw = parseFloat(document.getElementById('npvRate').value);
+  const years = isFinite(yearsRaw) && yearsRaw > 0 ? yearsRaw : 15;
+  const ratePct = isFinite(rateRaw) && rateRaw >= 0 ? rateRaw : 7;
+  const r = ratePct/100;
+
+  let pvOpex;
+  if(r === 0){
+    pvOpex = opexAnnual * years;
+  } else {
+    pvOpex = opexAnnual * (1 - Math.pow(1+r, -years)) / r;
+  }
+  const tco = capex + pvOpex;
+
+  npvTableEl.querySelector('tbody') || (npvTableEl.innerHTML = '<tbody></tbody>');
+  npvTableEl.querySelector('tbody').innerHTML = `
+    <tr><td class="label">CAPEX (ปีที่ 0)</td><td>${fmtTHB(capex)}</td></tr>
+    <tr><td class="label">OPEX ต่อปี (ค่าที่ตั้งไว้)</td><td>${fmtTHB(opexAnnual)}</td></tr>
+    <tr><td class="label">อายุโครงการที่คำนวณ</td><td>${fmt(years,0)} ปี</td></tr>
+    <tr><td class="label">อัตราคิดลด</td><td>${fmt(ratePct,1)}%/ปี</td></tr>
+    <tr><td class="label">มูลค่าปัจจุบันของ OPEX ตลอดโครงการ (PV of OPEX)</td><td>${fmtTHB(pvOpex)}</td></tr>
+  `;
+  const npvTotalEl = document.getElementById('npvTotal');
+  if(npvTotalEl) npvTotalEl.textContent = fmtTHB(tco);
+}
+
+function calculate(){
+  const Q = parseFloat(document.getElementById('flow').value);
+  const BOD = parseFloat(document.getElementById('bod').value);
+  const COD = parseFloat(document.getElementById('cod').value);
+  const TSS = parseFloat(document.getElementById('tss').value);
+  const OIL = parseFloat(document.getElementById('oil').value) || 0;
+  const standard = document.getElementById('standard').value;
+  const space = document.getElementById('space').value;
+  const errMsg = document.getElementById('errMsg');
+
+  if(!(Q>0) || !(BOD>0) || !(COD>0)){
+    errMsg.style.display='block';
+    document.getElementById('results').style.display='none';
+    return;
+  }
+  errMsg.style.display='none';
+
+  const getP = (id, def) => {
+    if(!advOn) return def;
+    const v = parseFloat(document.getElementById(id).value);
+    return isFinite(v) && v>0 ? v : def;
+  };
+  const P_eqHrt = getP('p_eqHrt', 6);
+  const P_fm = getP('p_fm', 0.1);
+  const P_mlss = getP('p_mlss', 3500);
+  const P_srt = getP('p_srt', 15);
+  const P_slr = getP('p_slr', 20);
+  const P_olr = getP('p_olr', 5);
+  const P_alpha = getP('p_alpha', 0.65);
+  const P_sae = getP('p_sae', 1.5);
+  const P_temp = getP('p_temp', 25);
+  const tknRaw = document.getElementById('p_tkn').value;
+  const tpRaw = document.getElementById('p_tp').value;
+  const P_tkn = advOn && tknRaw !== '' ? parseFloat(tknRaw) : null;
+  const P_tp = advOn && tpRaw !== '' ? parseFloat(tpRaw) : null;
+  const P_ntarget = getP('p_ntarget', 20);
+  const P_ptarget = getP('p_ptarget', 2);
+
+  let aerationVolM3 = 0;
+
+  const ratio = BOD/COD;
+  const codLoadKgDay = Q*COD/1000;
+  const bodLoadKgDay = Q*BOD/1000;
+  const highStrength = COD >= 3000;
+  const poorBiodeg = ratio < 0.3;
+  const moderateBiodeg = ratio >= 0.3 && ratio < 0.5;
+  const oilHigh = OIL > 50;
+  const strict = (standard === 'strict' || standard === 'reuse');
+  const reuse = standard === 'reuse';
+  const limited = space === 'limited';
+
+  let badges = [];
+  let train = [];
+  let sizing = [];
+  let equip = [];
+  let civilItems = [];
+
+  // Pretreatment
+  train.push({t:'ตะแกรงดักขยะ (Bar Screen)', d:'กรองเศษขยะ/ของแข็งขนาดใหญ่ก่อนเข้าระบบ'});
+  equip.push({name:'ตะแกรงดักขยะ (Manual/Mechanical Bar Screen)', price: tierPrice(Q,20000,60000,180000), optional:false, maintRate:0.05});
+
+  if(oilHigh){
+    badges.push({cls:'amber', txt:'น้ำมัน/ไขมันสูง ต้องดักไขมันก่อน'});
+    train.push({t:'บ่อดักไขมัน / DAF (Dissolved Air Flotation)', d:`Oil & Grease ${OIL} mg/L ต้องแยกก่อนเข้าระบบชีวภาพ`});
+    equip.push({name:'เครื่อง DAF หรือถังดักไขมัน (Grease Trap)', price: Math.max(80000, Math.round(Q*400)), optional:true, maintRate:0.06});
+  }
+
+  // Equalization
+  const eqHRT = P_eqHrt;
+  const eqVol = Q*(eqHRT/24);
+  train.push({t:'ถังปรับสภาพ (Equalization Tank)', d:'ปรับอัตราการไหลและความเข้มข้นให้สม่ำเสมอก่อนเข้าระบบชีวภาพ'});
+  sizing.push(['ถังปรับสภาพ (EQ Tank)', `${fmt(eqVol)} m³`, `HRT ${eqHRT} ชม.`]);
+  civilItems.push({name:'งานโยธาถังปรับสภาพ (EQ Tank)', price: Math.round(eqVol*5000)});
+  equip.push({name:'เครื่องกวนผสม/เครื่องเติมอากาศในถัง EQ + ปั๊มสูบน้ำเสีย', price: tierPrice(Q,60000,150000,350000), optional:false, maintRate:0.06});
+
+  if(poorBiodeg){
+    badges.push({cls:'rust', txt:'ค่า BOD/COD ต่ำ (ย่อยสลายยาก) — ต้องใช้ระบบเคมีช่วย'});
+    train.push({t:'ระบบเคมี (Coagulation-Flocculation + DAF/Clarifier)', d:'จับตกตะกอนสารมลพิษที่จุลินทรีย์ย่อยยาก ก่อนหรือแทนระบบชีวภาพ'});
+    equip.push({name:'ถังโคแอกกูเลชั่น/ฟล็อกคูเลชั่น + ปั๊มจ่ายสารเคมี (PAC/Polymer)', price: tierPrice(Q,150000,300000,600000), optional:true, maintRate:0.06});
+  } else if(moderateBiodeg){
+    badges.push({cls:'amber', txt:'ค่า BOD/COD ปานกลาง — ควรมีระบบปรับสภาพ/สารเสริมจุลินทรีย์'});
+  } else {
+    badges.push({cls:'sage', txt:'ค่า BOD/COD สูง (ย่อยสลายง่าย) — เหมาะกับระบบชีวภาพ'});
+  }
+
+  // Main biological
+  let mainProcess = '';
+  if(highStrength){
+    const uasbOLR = P_olr;
+    const uasbVol = codLoadKgDay/uasbOLR;
+    train.push({t:'ถังแอนแอโรบิก UASB', d:`COD สูง (${fmt(COD,0)} mg/L) เหมาะกับระบบไร้อากาศก่อน เพื่อลดภาระ COD จำนวนมาก`});
+    sizing.push(['ถัง UASB', `${fmt(uasbVol)} m³`, `OLR ${uasbOLR} kgCOD/m³·day`]);
+    civilItems.push({name:'งานโยธาถัง UASB', price: Math.round(uasbVol*7000)});
+    equip.push({name:'ถัง UASB พร้อมระบบ Gas Collection และ Biogas Flare/Utilization', price: tierPrice(Q,300000,600000,1200000), optional:false, maintRate:0.05});
+    mainProcess = 'uasb+aerobic';
+  }
+
+  let usingMBR = false;
+  if(limited || reuse){
+    if(strict){
+      badges.push({cls:'amber', txt: reuse ? 'ต้องการนำน้ำกลับมาใช้ใหม่ — เลือก MBR (คุณภาพน้ำออกสูงสุด รองรับการนำกลับมาใช้)' : 'พื้นที่จำกัด + มาตรฐานเข้มงวด — เลือก MBR (แพงกว่า MBBR แต่กะทัดรัดและคุณภาพน้ำออกสูงสุด)'});
+      train.push({t:'ระบบ MBR (Membrane Bioreactor)', d:'ใช้เมมเบรนกรองแทนถังตกตะกอน คุณภาพน้ำออกสูงมาก เหมาะกับพื้นที่จำกัดร่วมกับมาตรฐานเข้มงวด/ต้องการนำน้ำกลับมาใช้ใหม่'});
+      const hrt = 6;
+      const vol = Q*(hrt/24);
+      aerationVolM3 = vol;
+      sizing.push(['ถังชีวภาพ MBR', `${fmt(vol)} m³`, `HRT ${hrt} ชม., MLSS สูง 8,000–12,000 mg/L`]);
+      civilItems.push({name:'งานโยธาถังชีวภาพ MBR', price: Math.round(vol*11000)});
+      equip.push({name:'ชุดเมมเบรน MBR (Membrane Module) + เครื่องเติมอากาศ + ปั๊ม Permeate', price: tierPrice(Q,400000,900000,2200000), optional:false, maintRate:0.12});
+      usingMBR = true;
+      if(!highStrength){ mainProcess = 'mbr'; } else { mainProcess += '+mbr_polish'; }
+    } else {
+      train.push({t:'ระบบ MBBR (Moving Bed Biofilm Reactor)', d:'ตัวกลางชีวภาพเพิ่มพื้นที่ผิวให้จุลินทรีย์เกาะ ใช้พื้นที่น้อยกว่าระบบตะกอนเร่งทั่วไป โดยไม่ต้องใช้เมมเบรน'});
+      const hrt = 8;
+      const vol = Q*(hrt/24);
+      aerationVolM3 = vol;
+      sizing.push(['ถังชีวภาพ MBBR', `${fmt(vol)} m³`, `HRT ${hrt} ชม. (โดยประมาณ)`]);
+      civilItems.push({name:'งานโยธาถังชีวภาพ MBBR', price: Math.round(vol*7500)});
+      equip.push({name:'ตัวกลาง MBBR (Media) + เครื่องเติมอากาศ (Blower/Diffuser)', price: tierPrice(Q,180000,450000,1000000), optional:false, maintRate:0.06});
+      if(!highStrength){ mainProcess = 'mbbr'; } else { mainProcess += '+mbbr_polish'; }
+    }
+  } else {
+    const FM = P_fm, MLSS = P_mlss/1000;
+    const asVol = bodLoadKgDay/(FM*MLSS);
+    aerationVolM3 = asVol;
+    train.push({t:'ระบบตะกอนเร่งแบบเติมอากาศเต็มที่ (Extended Aeration AS) หรือ SBR', d:'ระบบชีวภาพมาตรฐาน เหมาะกับพื้นที่ที่มีเพียงพอ ดูแลง่าย'});
+    sizing.push(['ถังเติมอากาศ (Aeration Tank)', `${fmt(asVol)} m³`, `F/M ${FM} kgBOD/kgMLSS·day, MLSS ${MLSS*1000} mg/L`]);
+    civilItems.push({name:'งานโยธาถังเติมอากาศ', price: Math.round(asVol*5000)});
+    equip.push({name:'เครื่องเติมอากาศ (Blower + Diffuser หรือ Surface Aerator)', price: tierPrice(Q,150000,400000,900000), optional:false, maintRate:0.06});
+    const clarArea = Q/P_slr;
+    train.push({t:'ถังตกตะกอน (Secondary Clarifier)', d:'แยกตะกอนจุลินทรีย์ออกจากน้ำใส ก่อนปล่อยหรือบำบัดต่อ'});
+    sizing.push(['ถังตกตะกอนที่ 2', `${fmt(clarArea)} m²`, `Surface Loading Rate ${P_slr} m³/m²·day`]);
+    civilItems.push({name:'งานโยธาถังตกตะกอน', price: Math.round(clarArea*8000)});
+    equip.push({name:'เครื่องกวาดตะกอน (Sludge Scraper) + ปั๊ม Return Sludge (RAS)', price: tierPrice(Q,150000,350000,700000), optional:false, maintRate:0.06});
+    if(!highStrength){ mainProcess = 'as'; } else { mainProcess += '+as_polish'; }
+  }
+
+  // Tertiary
+  if(strict && !usingMBR){
+    badges.push({cls:'amber', txt:'มาตรฐานเข้มงวด — ต้องมีระบบกรองขั้นสูง'});
+    train.push({t:'ถังกรองทราย (Sand Filter)', d:'ลด TSS ที่เหลือให้ต่ำกว่ามาตรฐานน้ำทิ้งลงแหล่งน้ำสาธารณะ'});
+    sizing.push(['ถังกรองทราย', `พื้นที่กรอง ${fmt(Q/120,1)} m²`, 'Filtration Rate 120 m³/m²·day']);
+    civilItems.push({name:'งานโยธาถังกรองทราย', price: Math.round((Q/120)*10000)});
+    equip.push({name:'ถังกรองทราย/คาร์บอน + ระบบล้างย้อน (Backwash)', price: tierPrice(Q,80000,180000,350000), optional:true, maintRate:0.05});
+  } else if(strict && usingMBR){
+    badges.push({cls:'sage', txt:'ใช้ MBR อยู่แล้ว — เมมเบรนกรองคุณภาพน้ำออกได้ตามมาตรฐานเข้มงวดโดยไม่ต้องมีถังกรองทรายเพิ่ม'});
+  }
+
+  if(reuse){
+    badges.push({cls:'rust', txt:'เกรดนำน้ำกลับมาใช้ใหม่ — ควรพิจารณาระบบกรองละเอียดเพิ่มเติมตามวัตถุประสงค์การใช้น้ำ'});
+    train.push({t:'ระบบกรองขั้นสูงเพื่อนำน้ำกลับมาใช้ใหม่ (Activated Carbon / RO)', d:'ขัดคุณภาพน้ำจาก MBR ให้ปลอดภัยตามวัตถุประสงค์การนำกลับมาใช้ (รดน้ำต้นไม้/ล้างพื้น/หม้อไอน้ำ/กระบวนการผลิต) — ระดับความเข้มงวดขึ้นกับการใช้งานปลายทางจริง ควรปรึกษาผู้เชี่ยวชาญเฉพาะทาง'});
+    equip.push({name:'ถังคาร์บอนกรองกลิ่น/สี + ชุด RO (ถ้าจำเป็นตามคุณภาพน้ำที่ต้องการ)', price: tierPrice(Q,200000,500000,1200000), optional:true, maintRate:0.08});
+  }
+
+  train.push({t:'ระบบฆ่าเชื้อ (Disinfection)', d: wwType==='hospital' ? 'จำเป็นอย่างยิ่งสำหรับน้ำเสียโรงพยาบาล เพื่อกำจัดเชื้อโรค' : 'ฆ่าเชื้อก่อนปล่อยทิ้งตามมาตรฐาน'});
+  equip.push({
+    name: wwType==='hospital' ? 'ระบบคลอรีน + ถังสัมผัสคลอรีน (Chlorine Contact Tank) หรือ UV' : 'ถังสัมผัสคลอรีน (Chlorine Contact Tank)',
+    price: wwType==='hospital' ? tierPrice(Q,150000,350000,700000) : tierPrice(Q,40000,100000,250000),
+    optional:false,
+    maintRate:0.05
+  });
+
+  if(wwType==='hospital'){
+    badges.push({cls:'rust', txt:'น้ำเสียโรงพยาบาล — ต้องมีการฆ่าเชื้อและอาจต้องพิจารณา MBR'});
+  }
+  if(wwType==='food'){
+    badges.push({cls:'sage', txt:'อุตสาหกรรมอาหาร — มักมี Oil & Grease และ BOD/COD สูงกว่าน้ำเสียทั่วไป ตรวจสอบว่าค่าที่กรอกตรงกับผลตรวจจริงของโรงงาน'});
+  }
+  if(wwType==='chemical'){
+    badges.push({cls:'amber', txt:'อุตสาหกรรมเคมี/สี — อาจมีโลหะหนัก/สารพิษที่แอปนี้ยังไม่คำนวณการกำจัด ควรตรวจสอบและออกแบบระบบกำจัดโลหะหนักแยกต่างหากตามกฎหมายที่เกี่ยวข้อง'});
+  }
+
+  // Sludge — process-specific yield formulas
+  const bodRemoved = bodLoadKgDay*0.9; // overall BOD removed, also used later for oxygen demand
+  const kd = 0.06;      // endogenous decay coefficient, 1/day (typical aerobic heterotrophs)
+  const Ygross = 0.6;   // kgVSS/kgBODremoved, gross aerobic biomass yield
+
+  let sludgeKgDay = 0;
+  let sludgeFormulaParts = [];
+
+  if(mainProcess.includes('uasb')){
+    const codRemovedUASB = codLoadKgDay*0.75; // typical UASB COD removal 70-85%
+    const anaerobicSludge = 0.08*codRemovedUASB; // low anaerobic yield, kgVSS/kgCODremoved
+    sludgeKgDay += anaerobicSludge;
+    sludgeFormulaParts.push(`UASB (แอนแอโรบิก): 0.08 × COD removed (${fmt(codRemovedUASB)} kg/day) = ${fmt(anaerobicSludge)} kg/day`);
+
+    const residualBOD = bodLoadKgDay*0.25*0.9; // aerobic polish handles ~25% residual BOD, 90% removed there
+    const YobsPolish = Ygross/(1+kd*P_srt);
+    const polishSludge = YobsPolish*residualBOD;
+    sludgeKgDay += polishSludge;
+    sludgeFormulaParts.push(`ระบบชีวภาพขัด (aerobic polish): Yobs=${fmt(YobsPolish,3)} × BOD ตกค้าง (${fmt(residualBOD)} kg/day) = ${fmt(polishSludge)} kg/day`);
+  } else if(mainProcess.includes('mbr') && !mainProcess.includes('mbbr')){
+    const Yobs = Ygross/(1+kd*P_srt);
+    sludgeKgDay = Yobs*bodRemoved;
+    sludgeFormulaParts.push(`MBR: Yobs = ${Ygross}/(1+${kd}×SRT ${fmt(P_srt,0)} วัน) = ${fmt(Yobs,3)} kgVSS/kgBODremoved × BOD removed (${fmt(bodRemoved)} kg/day)`);
+  } else if(mainProcess.includes('mbbr')){
+    const Yfixed = 0.4;
+    sludgeKgDay = Yfixed*bodRemoved;
+    sludgeFormulaParts.push(`MBBR: Y คงที่ ${Yfixed} kgVSS/kgBODremoved (ตัวกลางชีวภาพแบบ attached growth ไม่มี SRT แบบ suspended) × BOD removed (${fmt(bodRemoved)} kg/day)`);
+  } else {
+    const Yobs = Ygross/(1+kd*P_srt);
+    sludgeKgDay = Yobs*bodRemoved;
+    sludgeFormulaParts.push(`AS: Yobs = ${Ygross}/(1+${kd}×SRT ${fmt(P_srt,0)} วัน) = ${fmt(Yobs,3)} kgVSS/kgBODremoved × BOD removed (${fmt(bodRemoved)} kg/day)`);
+  }
+
+  if(poorBiodeg){
+    const coagDoseKgDay = Q*80/1000; // matches OPEX PAC dose assumption
+    const chemSludge = coagDoseKgDay*1.5; // typical chemical floc production factor
+    sludgeKgDay += chemSludge;
+    sludgeFormulaParts.push(`ตะกอนเคมี (Coagulation): PAC dose (${fmt(coagDoseKgDay)} kg/day) × 1.5 = ${fmt(chemSludge)} kg/day`);
+  }
+
+  const sludgeM3Day = sludgeKgDay/(1000*0.02);
+
+  let dewater;
+  if(poorBiodeg){
+    dewater = {name:'Filter Press (Plate &amp; Frame)', solids:'30–45%', reason:'ตะกอนมาจากระบบเคมี/สารตกตะกอนอนินทรีย์ ต้องการเครื่องที่รีดได้แห้งที่สุด แม้เป็นระบบ batch และดูแลมากกว่า'};
+  } else if(limited && sludgeKgDay > 50){
+    dewater = {name:'Centrifuge (Decanter)', solids:'20–30%', reason:'พื้นที่จำกัดและปริมาณตะกอนค่อนข้างมาก เหมาะกับระบบกะทัดรัดที่ทำงานอัตโนมัติได้เต็มรูปแบบ'};
+  } else if(sludgeKgDay > 500){
+    dewater = {name:'Belt Press', solids:'18–25%', reason:'ปริมาณตะกอนมาก เหมาะกับการทำงานต่อเนื่องขนาดกลาง-ใหญ่ ต้นทุนอุปกรณ์เข้าถึงง่าย'};
+  } else {
+    dewater = {name:'Screw Press', solids:'15–25%', reason:'ตะกอนชีวภาพปริมาณไม่มาก ใช้พลังงานและแรงงานดูแลต่ำ เดินเครื่องต่อเนื่องได้ เสียงเงียบ'};
+  }
+
+  document.getElementById('sludgePanel').innerHTML = `
+    <table class="spec">
+      <tr><td class="label">ปริมาณตะกอนแห้งโดยประมาณ</td><td>${fmt(sludgeKgDay)} kg/day</td></tr>
+      <tr><td class="label">ปริมาตรตะกอน (ที่ 2% solids)</td><td>${fmt(sludgeM3Day)} m³/day</td></tr>
+      <tr><td class="label">เครื่องรีดตะกอนที่แนะนำ</td><td>${dewater.name}</td></tr>
+      <tr><td class="label">%Solids หลังรีดโดยประมาณ</td><td>${dewater.solids}</td></tr>
+    </table>
+    <div class="note">${dewater.reason}</div>
+    <div class="note" style="margin-top:8px; background:var(--sage-bg); border-left-color:var(--sage);"><strong>ที่มาของตัวเลขตะกอน:</strong><br>${sludgeFormulaParts.join('<br>')}</div>
+  `;
+  civilItems.push({name:'งานโยธาถังพักตะกอน', price: Math.max(50000, Math.round(sludgeM3Day*3*5000))});
+  equip.push({name:'ถังพักตะกอน (Sludge Holding Tank) + ปั๊มตะกอน', price: Math.max(40000, Math.round(sludgeM3Day*3*3000)), optional:false, maintRate:0.06});
+
+  let dewaterPrice;
+  if(dewater.name.includes('Filter Press')) dewaterPrice = tierPrice(sludgeKgDay,500000,900000,1500000);
+  else if(dewater.name.includes('Centrifuge')) dewaterPrice = tierPrice(sludgeKgDay,1200000,2000000,3500000);
+  else if(dewater.name.includes('Belt Press')) dewaterPrice = tierPrice(sludgeKgDay,600000,1000000,1800000);
+  else dewaterPrice = tierPrice(sludgeKgDay,350000,600000,900000);
+  equip.push({name:`เครื่องรีดตะกอน: ${dewater.name} + ปั๊มจ่ายโพลิเมอร์ (Polymer Dosing)`, price: dewaterPrice, optional:true, maintRate:0.07});
+
+  // --- Annual OPEX estimate: electricity, chemicals, labor ---
+  const ELEC_RATE = 4.5; // THB/kWh, typical Thai industrial rate
+
+  let energyIntensity = 0.3; // kWh/m3 baseline
+  if(mainProcess.includes('mbr') && !mainProcess.includes('mbbr')) energyIntensity = 1.0;
+  else if(mainProcess.includes('mbbr')) energyIntensity = 0.5;
+  else if(mainProcess.includes('as')) energyIntensity = 0.4;
+  if(mainProcess.includes('uasb')) energyIntensity = energyIntensity*0.6 + 0.05; // UASB cuts downstream aeration load, adds small pumping/mixing load
+
+  const electricityAnnual = Q * energyIntensity * 365 * ELEC_RATE;
+
+  let coagulantAnnual = 0;
+  if(poorBiodeg){
+    const coagDoseKgDay = Q * 80/1000; // 80 mg/L PAC dose assumption
+    coagulantAnnual = coagDoseKgDay * 365 * 15; // 15 THB/kg PAC
+  }
+
+  let polymerAnnual = 0;
+  polymerAnnual = (sludgeKgDay/1000) * 5 * 365 * 150; // 5 kg polymer/tonne dry solids, 150 THB/kg
+
+  const chlorineDoseKgDay = Q * 5/1000; // 5 mg/L dose assumption
+  const chlorineAnnual = chlorineDoseKgDay * 365 * 25; // 25 THB/kg
+
+  const chemicalsAnnual = coagulantAnnual + polymerAnnual + chlorineAnnual;
+  const laborAnnual = tierPrice(Q, 60000, 240000, 720000);
+
+  window.currentOpexFixed = electricityAnnual + chemicalsAnnual + laborAnnual;
+  window.opexBreakdown = {electricityAnnual, coagulantAnnual, polymerAnnual, chlorineAnnual, chemicalsAnnual, laborAnnual, energyIntensity};
+
+  // Advanced: Oxygen requirement & Blower sizing
+  const oxygenSection = document.getElementById('oxygenSection');
+  const nutrientSection = document.getElementById('nutrientSection');
+
+  if(advOn && aerationVolM3 > 0){
+    oxygenSection.style.display = 'block';
+    const aPrime = 0.6;
+    const bPrime = 0.15;
+    const carbonaceousO2 = aPrime * bodRemoved;
+    const mlvssMassKg = (P_mlss/1000) * 0.8 * aerationVolM3;
+    const endogenousO2 = bPrime * mlvssMassKg;
+    let nitrificationO2 = 0;
+    let nitrifyNote = '';
+    if(P_tkn !== null && !isNaN(P_tkn)){
+      if(P_srt >= 10){
+        const nAssimKgDay = 0.12 * sludgeKgDay;
+        const tknLoadKgDay = Q*P_tkn/1000;
+        const nToNitrify = Math.max(0, tknLoadKgDay - nAssimKgDay);
+        nitrificationO2 = 4.57 * nToNitrify;
+        nitrifyNote = `SRT ${fmt(P_srt,0)} วัน เพียงพอต่อการเกิดไนตริฟิเคชัน (ต้องการ ≥10 วัน)`;
+      } else {
+        nitrifyNote = `SRT ${fmt(P_srt,0)} วัน อาจไม่พอสำหรับไนตริฟิเคชันที่เสถียร (แนะนำ ≥10-15 วัน) — ยังไม่รวม O₂ สำหรับไนตริฟิเคชันในตัวเลขนี้`;
+      }
+    }
+    const aorKgDay = carbonaceousO2 + endogenousO2 + nitrificationO2;
+    const sotrKgDay = aorKgDay / P_alpha;
+    const sotrKgHr = sotrKgDay/24;
+    const powerKw = sotrKgHr / P_sae;
+    const ote = 0.25;
+    const airflowNm3Hr = sotrKgHr/(ote*0.28);
+    const airflowNm3Min = airflowNm3Hr/60;
+
+    document.getElementById('oxygenPanel').innerHTML = `
+      <table class="spec">
+        <tr><td class="label">O₂ สำหรับย่อยสลาย BOD (Carbonaceous)</td><td>${fmt(carbonaceousO2)} kgO₂/day</td></tr>
+        <tr><td class="label">O₂ สำหรับการหายใจภายในเซลล์ (Endogenous)</td><td>${fmt(endogenousO2)} kgO₂/day</td></tr>
+        ${P_tkn!==null ? `<tr><td class="label">O₂ สำหรับไนตริฟิเคชัน</td><td>${fmt(nitrificationO2)} kgO₂/day</td></tr>` : ''}
+        <tr><td class="label"><strong>AOR รวม (Actual Oxygen Requirement)</strong></td><td><strong>${fmt(aorKgDay)} kgO₂/day</strong></td></tr>
+        <tr><td class="label">SOTR (แก้ด้วย α = ${P_alpha})</td><td>${fmt(sotrKgDay)} kgO₂/day</td></tr>
+        <tr><td class="label">กำลังเครื่องเติมอากาศโดยประมาณ (SAE ${P_sae} kgO₂/kWh)</td><td>${fmt(powerKw)} kW</td></tr>
+        <tr><td class="label">อัตราการเป่าอากาศโดยประมาณ (OTE ${ote*100}%)</td><td>${fmt(airflowNm3Min)} Nm³/min</td></tr>
+      </table>
+      ${nitrifyNote ? `<div class="note">${nitrifyNote}</div>` : ''}
+      <div class="note">คำนวณแบบย่อ (Metcalf &amp; Eddy rule-of-thumb): AOR = a'×BODremoved + b'×MLVSS + 4.57×N-nitrified (a'=${aPrime}, b'=${bPrime}). ยังไม่รวม β-factor และ correction factor ตามอุณหภูมิ/ความสูงพื้นที่แบบละเอียด ควรตรวจสอบกับสเปกจริงของ diffuser/blower ที่เลือกใช้</div>
+    `;
+  } else {
+    oxygenSection.style.display = 'none';
+  }
+
+  // Advanced: Nitrogen / Phosphorus removal
+  if(advOn && (P_tkn !== null || P_tp !== null)){
+    nutrientSection.style.display = 'block';
+    let html = '';
+
+    if(P_tkn !== null && !isNaN(P_tkn)){
+      const tknLoadKgDay = Q*P_tkn/1000;
+      const nAssimKgDay = 0.12 * sludgeKgDay;
+      const nTargetLoadKgDay = Q*P_ntarget/1000;
+      const noxProduced = Math.max(0, tknLoadKgDay - nAssimKgDay);
+      const nToDenitrify = Math.max(0, noxProduced - nTargetLoadKgDay);
+      html += `
+        <table class="spec">
+          <tr><td class="label">ภาระไนโตรเจนเข้าระบบ (TKN load)</td><td>${fmt(tknLoadKgDay)} kgN/day</td></tr>
+          <tr><td class="label">N ที่ถูกใช้สร้างเซลล์จุลินทรีย์</td><td>${fmt(nAssimKgDay)} kgN/day</td></tr>
+          <tr><td class="label">NOx ที่คาดว่าเกิดจากไนตริฟิเคชัน</td><td>${fmt(noxProduced)} kgN/day</td></tr>
+          <tr><td class="label">N ที่ต้องกำจัดด้วยดีไนตริฟิเคชัน</td><td>${fmt(nToDenitrify)} kgN/day</td></tr>
+        </table>`;
+      if(nToDenitrify > 0.01){
+        const sdnr = 0.05;
+        const mlvssConc = (P_mlss/1000)*0.8;
+        const anoxicVol = nToDenitrify/(sdnr*mlvssConc);
+        html += `
+          <div class="note">
+            ต้องเพิ่มโซนไร้อากาศ-ไม่มีออกซิเจนละลาย (Anoxic Zone) แบบ Pre-anoxic (MLE Process) ก่อนโซนเติมอากาศ<br>
+            ปริมาตรถัง Anoxic โดยประมาณ: ${fmt(anoxicVol)} m³ (SDNR ${sdnr} kgNO₃-N/kgMLVSS·day)<br>
+            อัตรา Internal Recycle (IR) แนะนำ: 300–400% ของ Q เพื่อส่ง NOx กลับมาย่อยในโซน Anoxic
+          </div>`;
+      } else {
+        html += `<div class="note">ไนตริฟิเคชันเพียงอย่างเดียวน่าจะเพียงพอให้ N ในน้ำทิ้งถึงเป้าหมาย ${P_ntarget} mg/L โดยไม่ต้องมีโซน Anoxic เพิ่ม</div>`;
+      }
+    }
+
+    if(P_tp !== null && !isNaN(P_tp)){
+      const pToRemove = Math.max(0, P_tp - P_ptarget);
+      html += `<table class="spec" style="margin-top:${P_tkn!==null?'14px':'0'};">
+          <tr><td class="label">Total P ในน้ำเสีย</td><td>${fmt(P_tp)} mg/L</td></tr>
+          <tr><td class="label">เป้าหมายน้ำทิ้ง</td><td>${fmt(P_ptarget)} mg/L</td></tr>
+        </table>`;
+      if(pToRemove > 0.01){
+        const alumDoseMgL = 10*pToRemove;
+        const alumKgDay = alumDoseMgL*Q/1000;
+        html += `
+          <div class="note">
+            แนะนำระบบกำจัด P ทางเคมี (Chemical Precipitation) เสริมจากระบบชีวภาพ เนื่องจากเป้าหมายค่อนข้างต่ำ<br>
+            ปริมาณสารส้ม (Alum) โดยประมาณ: ${fmt(alumDoseMgL)} mg/L หรือ ${fmt(alumKgDay)} kg/day (อัตราส่วนอย่างง่าย 10:1 โดยน้ำหนักต่อ P ที่ต้องกำจัด — ควรยืนยันด้วย jar test จริง)<br>
+            หากต้องการลดการใช้สารเคมี พิจารณาเพิ่มโซนไร้อากาศ (Anaerobic Selector) เพื่อทำ Enhanced Biological Phosphorus Removal (EBPR) ก่อน
+          </div>`;
+      } else {
+        html += `<div class="note">ระดับ P ปัจจุบันใกล้เคียงเป้าหมายแล้ว ระบบชีวภาพมาตรฐานน่าจะเพียงพอ ไม่จำเป็นต้องเติมสารเคมี</div>`;
+      }
+    }
+
+    document.getElementById('nutrientPanel').innerHTML = html;
+  } else {
+    nutrientSection.style.display = 'none';
+  }
+
+  // Render badges
+  document.getElementById('badges').innerHTML = badges.map(b=>`<span class="badge ${b.cls}">${b.txt}</span>`).join(' ');
+
+  // Render train
+  document.getElementById('trainList').innerHTML = train.map((s,i)=>`
+    <div class="stage">
+      <div class="idx">${String(i+1).padStart(2,'0')}</div>
+      <div class="body"><strong>${s.t}</strong><span>${s.d}</span></div>
+    </div>
+  `).join('');
+
+  // Render sizing table
+  document.getElementById('sizingTable').querySelector('tbody').innerHTML = sizing.map(r=>`
+    <tr><td class="label">${r[0]}</td><td>${r[1]}</td><td class="label">${r[2]}</td></tr>
+  `).join('');
+
+  // Render civil works table
+  document.getElementById('civilTable').querySelector('tbody').innerHTML = civilItems.map(c=>`
+    <tr><td class="label">${c.name}</td><td>${fmtTHB(c.price)}</td><td>${fmtTHB(c.price*CIVIL_MAINT_RATE)}</td></tr>
+  `).join('');
+  const civilTotal = civilItems.reduce((a,c)=>a+c.price, 0);
+  const civilMaintTotal = civilItems.reduce((a,c)=>a+c.price*CIVIL_MAINT_RATE, 0);
+  window.currentCivilTotal = civilTotal;
+  window.currentCivilMaint = civilMaintTotal;
+
+  // Render equipment checkboxes
+  document.getElementById('equipList').innerHTML = equip.map((e,i)=>`
+    <div class="equip-row">
+      <div class="left">
+        <input type="checkbox" id="eqchk_${i}" checked ${e.optional ? '' : 'disabled'} data-price="${e.price}" data-maint="${e.price*e.maintRate}" onchange="updateTotal()">
+        <span class="name">${e.name}${e.optional ? '<span class="opt-tag">(Option)</span>' : ''}</span>
+      </div>
+      <div style="text-align:right; flex-shrink:0;">
+        <div class="price">${fmtTHB(e.price)}</div>
+        <div class="price" style="color:var(--ink-soft); font-size:11px; margin-top:2px;">~${fmtTHB(e.price*e.maintRate)}/ปี (${Math.round(e.maintRate*100)}%)</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Render OPEX table (electricity, chemicals, labor)
+  const opex = window.opexBreakdown;
+  const opexRows = [
+    ['ค่าไฟฟ้า', fmtTHB(opex.electricityAnnual), `${fmt(opex.energyIntensity,2)} kWh/m³ × ${ELEC_RATE} บาท/kWh`],
+  ];
+  if(opex.coagulantAnnual > 0) opexRows.push(['สารเคมี — สารตกตะกอน (PAC)', fmtTHB(opex.coagulantAnnual), '80 mg/L']);
+  if(opex.polymerAnnual > 0) opexRows.push(['สารเคมี — โพลิเมอร์ (รีดตะกอน)', fmtTHB(opex.polymerAnnual), '5 kg/tonne dry solids']);
+  opexRows.push(['สารเคมี — คลอรีนฆ่าเชื้อ', fmtTHB(opex.chlorineAnnual), '5 mg/L']);
+  opexRows.push(['ค่าแรงงานควบคุมระบบ', fmtTHB(opex.laborAnnual), 'ตามขนาดโปรเจค']);
+  opexRows.push(['ค่าบำรุงรักษาเครื่องจักร/งานโยธา', 'ดูข้อ 07', 'ปรับตามรายการที่ติ๊กเลือก']);
+
+  document.getElementById('opexTable').querySelector('tbody').innerHTML = opexRows.map(r=>`
+    <tr><td class="label">${r[0]}</td><td>${r[1]}</td><td class="label">${r[2]}</td></tr>
+  `).join('');
+  document.getElementById('opexNote').innerHTML = `สมมติฐาน: ค่าไฟ ${ELEC_RATE} บาท/kWh (อัตราอุตสาหกรรมทั่วไป), PAC 15 บาท/kg, โพลิเมอร์ 150 บาท/kg, คลอรีน 25 บาท/kg — ทั้งหมดเป็นค่าเฉลี่ยตลาด ไม่ได้ผูกกับซัพพลายเออร์รายใดรายหนึ่ง`;
+
+  updateTotal();
+
+  document.getElementById('results').style.display='block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function textOf(el){ return el ? el.textContent.replace(/\s+/g,' ').trim() : ''; }
+
+function buildReportText(){
+  const lines = [];
+  lines.push('รายงานสรุประบบบำบัดน้ำเสีย (ประมาณการเบื้องต้น)');
+  lines.push('='.repeat(40));
+  lines.push('');
+  lines.push('สรุประบบที่แนะนำ:');
+  document.querySelectorAll('#trainList .stage').forEach(s=>{
+    const t = textOf(s.querySelector('strong'));
+    const d = textOf(s.querySelector('span'));
+    lines.push(`- ${t}: ${d}`);
+  });
+  lines.push('');
+  lines.push('ขนาดถัง/หน่วยบำบัด:');
+  document.querySelectorAll('#sizingTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${textOf(tds[0])}: ${textOf(tds[1])} (${textOf(tds[2])})`);
+  });
+  lines.push('');
+  lines.push('งานโยธา (Civil Works) — ราคาก่อสร้าง / บำรุงรักษาต่อปี:');
+  document.querySelectorAll('#civilTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${textOf(tds[0])}: ${textOf(tds[1])} / ${textOf(tds[2])} ต่อปี`);
+  });
+  lines.push('');
+  lines.push('เครื่องจักร/อุปกรณ์ไฟฟ้า — ราคา / บำรุงรักษาต่อปี:');
+  document.querySelectorAll('#equipList .equip-row').forEach(row=>{
+    const chk = row.querySelector('input[type=checkbox]');
+    const name = textOf(row.querySelector('.name'));
+    const prices = row.querySelectorAll('.price');
+    const price = textOf(prices[0]);
+    const maint = prices[1] ? textOf(prices[1]) : '';
+    lines.push(`- [${chk.checked ? 'x' : ' '}] ${name}: ${price} / ${maint}`);
+  });
+  lines.push('');
+  lines.push(`รวมราคาโปรเจคโดยประมาณ (CAPEX): ${textOf(document.getElementById('totalPrice'))}`);
+  lines.push(`ค่าบำรุงรักษาโดยประมาณต่อปี: ${textOf(document.getElementById('totalMaint'))}`);
+  lines.push('');
+  lines.push('ค่าดำเนินการต่อปี (OPEX):');
+  document.querySelectorAll('#opexTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${textOf(tds[0])}: ${textOf(tds[1])} (${textOf(tds[2])})`);
+  });
+  lines.push(`รวม OPEX โดยประมาณต่อปี: ${textOf(document.getElementById('totalOpexAll'))}`);
+  lines.push('');
+  lines.push('NPV / Total Cost of Ownership:');
+  document.querySelectorAll('#npvTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${textOf(tds[0])}: ${textOf(tds[1])}`);
+  });
+  lines.push(`Total Cost of Ownership (TCO): ${textOf(document.getElementById('npvTotal'))}`);
+  lines.push('');
+  lines.push('ตะกอน:');
+  document.querySelectorAll('#sludgePanel table tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${textOf(tds[0])}: ${textOf(tds[1])}`);
+  });
+  if(document.getElementById('oxygenSection').style.display !== 'none'){
+    lines.push('');
+    lines.push('ความต้องการออกซิเจน/Blower:');
+    document.querySelectorAll('#oxygenPanel table tr').forEach(r=>{
+      const tds = r.querySelectorAll('td');
+      lines.push(`- ${textOf(tds[0])}: ${textOf(tds[1])}`);
+    });
+  }
+  if(document.getElementById('nutrientSection').style.display !== 'none'){
+    lines.push('');
+    lines.push('การกำจัดไนโตรเจน/ฟอสฟอรัส:');
+    document.querySelectorAll('#nutrientPanel table tr').forEach(r=>{
+      const tds = r.querySelectorAll('td');
+      lines.push(`- ${textOf(tds[0])}: ${textOf(tds[1])}`);
+    });
+  }
+  lines.push('');
+  lines.push('หมายเหตุ: เป็นการประมาณการเบื้องต้น การออกแบบจริงต้องมีวิศวกรตรวจสอบและอาจต้องทำ pilot test');
+  return lines.join('\n');
+}
+
+function buildReportHTML(){
+  const style = `
+    body{font-family:'IBM Plex Sans Thai','IBM Plex Sans',sans-serif; color:#1F2C33; max-width:720px; margin:20px auto; padding:0 16px;}
+    h1{font-size:20px; border-bottom:2px solid #1F2C33; padding-bottom:10px;}
+    h2{font-size:15px; margin-top:24px;}
+    table{width:100%; border-collapse:collapse; font-size:13px; margin-bottom:10px;}
+    td{padding:6px; border-bottom:1px solid #D8D2C4;}
+    ul{font-size:13.5px;} li{margin-bottom:5px;}
+    .stage{padding:8px 0; border-bottom:1px dashed #D8D2C4;}
+    .stage strong{display:block; font-size:14px;}
+    .stage span{font-size:12.5px; color:#5B6B72;}
+    .foot{font-size:11.5px; color:#5B6B72; border-top:1px solid #D8D2C4; margin-top:20px; padding-top:10px;}
+    @media print{ body{margin:0;} }
+  `;
+  return `<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>รายงานระบบบำบัดน้ำเสีย</title><style>${style}</style></head><body>
+    <h1>รายงานสรุประบบบำบัดน้ำเสีย (ประมาณการเบื้องต้น)</h1>
+    <h2>สรุประบบที่แนะนำ</h2>
+    <div>${document.getElementById('trainList').innerHTML}</div>
+    <h2>ขนาดถัง/หน่วยบำบัด</h2>
+    <table>${document.getElementById('sizingTable').innerHTML}</table>
+    <h2>งานโยธา (Civil Works)</h2>
+    <table>${document.getElementById('civilTable').innerHTML}</table>
+    <h2>เครื่องจักร/อุปกรณ์ไฟฟ้าที่เลือก (ราคา / บำรุงรักษาต่อปี)</h2>
+    <ul>${Array.from(document.querySelectorAll('#equipList .equip-row')).filter(r=>r.querySelector('input[type=checkbox]').checked).map(r=>{
+      const prices = r.querySelectorAll('.price');
+      return `<li>${r.querySelector('.name').textContent.replace('(Option)','').trim()} — ${prices[0].textContent} / ${prices[1] ? prices[1].textContent : ''}</li>`;
+    }).join('')}</ul>
+    <p style="font-weight:600; font-size:14px; border-top:2px solid #1F2C33; padding-top:8px; margin-bottom:2px;">รวมราคาโปรเจคโดยประมาณ (CAPEX): ${document.getElementById('totalPrice').textContent}</p>
+    <p style="font-size:13px; color:#5B6B72;">ค่าบำรุงรักษาโดยประมาณต่อปี: ${document.getElementById('totalMaint').textContent}</p>
+    <h2>ค่าดำเนินการต่อปี (OPEX)</h2>
+    <table>${document.getElementById('opexTable').innerHTML}</table>
+    <p style="font-weight:600; font-size:14px; border-top:2px solid #1F2C33; padding-top:8px;">รวม OPEX โดยประมาณต่อปี: ${document.getElementById('totalOpexAll').textContent}</p>
+    <h2>NPV / Total Cost of Ownership</h2>
+    <table>${document.getElementById('npvTable').innerHTML}</table>
+    <p style="font-weight:600; font-size:14px; border-top:2px solid #1F2C33; padding-top:8px;">Total Cost of Ownership (TCO): ${document.getElementById('npvTotal').textContent}</p>
+    <h2>ตะกอนที่เกิดขึ้น</h2>
+    ${document.getElementById('sludgePanel').innerHTML}
+    ${document.getElementById('oxygenSection').style.display!=='none' ? '<h2>ความต้องการออกซิเจน/Blower</h2>'+document.getElementById('oxygenPanel').innerHTML : ''}
+    ${document.getElementById('nutrientSection').style.display!=='none' ? '<h2>การกำจัดไนโตรเจน/ฟอสฟอรัส</h2>'+document.getElementById('nutrientPanel').innerHTML : ''}
+    <div class="foot">ผลลัพธ์นี้เป็นการประมาณการเบื้องต้นจากหลักวิศวกรรมทั่วไป การออกแบบจริงต้องมีวิศวกรสิ่งแวดล้อมที่มีใบอนุญาตตรวจสอบและรับรองแบบก่อนก่อสร้าง</div>
+  </body></html>`;
+}
+
+function printReport(){
+  try{
+    let iframe = document.getElementById('printFrame');
+    if(!iframe){
+      iframe = document.createElement('iframe');
+      iframe.id = 'printFrame';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+    }
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(buildReportHTML());
+    doc.close();
+    setTimeout(()=>{
+      try{
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      }catch(e2){
+        alert('ไม่สามารถเปิดหน้าต่างพิมพ์ได้ในมุมมองนี้ กรุณากด "ดาวน์โหลดรายงาน" แล้วเปิดไฟล์เพื่อพิมพ์แทน');
+      }
+    }, 300);
+  }catch(e){
+    alert('ไม่สามารถเปิดหน้าต่างพิมพ์ได้ในมุมมองนี้ กรุณากด "ดาวน์โหลดรายงาน" แล้วเปิดไฟล์เพื่อพิมพ์แทน');
+  }
+}
+</script>
+
+</body>
+</html>
