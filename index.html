@@ -120,7 +120,7 @@
   .switch.on::after{left:20px;}
   .adv-panel{display:none; margin-top:14px;}
   .adv-panel.open{display:block;}
-  .field .field-note{font-size:11.5px; color:var(--ink-soft); margin-top:3px;}
+  .field-note{font-size:11.5px; color:var(--ink-soft); margin-top:3px;}
   .subhead{font-size:12.5px; font-weight:500; color:var(--steel-deep); margin:16px 0 10px; padding-top:12px; border-top:1px solid var(--line);}
   .subhead:first-child{border-top:none; padding-top:0; margin-top:0;}
   .equip-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line);}
@@ -206,6 +206,42 @@
       <option value="reuse">ต้องการนำน้ำกลับมาใช้ใหม่ (Reuse) — เข้มงวดสุด (BOD≤5, TSS≤5 mg/L)</option>
     </select>
     <div class="field-note">ตัวเลขอ้างอิงคร่าวๆ ตามแนวทางประกาศกระทรวงอุตสาหกรรม/มาตรฐานน้ำทิ้งทั่วไปของไทย มาตรฐานจริงขึ้นกับประเภทกิจการและพื้นที่ ควรตรวจสอบกับหน่วยงานที่เกี่ยวข้องก่อนออกแบบจริง</div>
+  </div>
+  <div id="roParamsField" style="display:none;">
+    <div class="row2">
+      <div class="field">
+        <label>% น้ำที่บำบัดแล้วที่จะส่งเข้า RO</label>
+        <input type="number" id="roPercent" value="50" min="0" max="100">
+      </div>
+      <div class="field">
+        <label>% Reject จาก RO (ของน้ำที่เข้า RO)</label>
+        <input type="number" id="rejectPercent" value="40" min="0" max="100">
+      </div>
+    </div>
+    <div class="field-note">ไม่จำเป็นต้องส่งน้ำบำบัดแล้วทั้งหมดเข้า RO — บางส่วนอาจใช้งานได้เลยหลัง MBR โดยไม่ต้องขัดเพิ่ม ส่วนที่เข้า RO จะมี Reject (น้ำเข้มข้น TDS สูง) ออกมาตามสัดส่วนที่กรอก ต้องวางแผนกำจัดแยกต่างหาก (ดูรายละเอียดในผลลัพธ์ด้านล่างหลังกดคำนวณ)</div>
+
+    <div class="panel-title" style="margin-top:14px;">ถ้าต้องการปล่อย Reject ลงท่อรวม — ตรวจสอบด้วย Mass Balance</div>
+    <div class="row2">
+      <div class="field">
+        <label>อัตราการไหลท่อรวม ณ จุดรับน้ำ (m³/day)</label>
+        <input type="number" id="sewerFlow" value="" min="0" placeholder="เช่น 2000">
+      </div>
+      <div class="field">
+        <label>TDS พื้นฐานของท่อรวม (mg/L)</label>
+        <input type="number" id="sewerTDS" value="" min="0" placeholder="เช่น 500">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>มาตรฐาน TDS สูงสุดที่ท่อรวมรับได้ (mg/L)</label>
+        <input type="number" id="sewerTDSLimit" value="" min="0" placeholder="เช่น 3000 — ขอจากผู้ดูแลท่อรวม/นิคมฯ">
+      </div>
+      <div class="field">
+        <label>TDS ของน้ำ Reject โดยประมาณ (mg/L)</label>
+        <input type="number" id="rejectTDS" value="" min="0" placeholder="เช่น 4000 — จากสเปก RO หรือประมาณ TDS feed/(1-recovery)">
+      </div>
+    </div>
+    <div class="field-note">กรอกครบทั้ง 4 ช่องนี้ถ้าต้องการให้แอปคำนวณ Mass Balance ว่าปล่อย Reject ลงท่อรวมได้เลยหรือไม่ ถ้าเว้นว่างไว้จะข้ามการคำนวณและแนะนำให้มีถังพัก Reject ไว้ก่อนตามค่าเริ่มต้น (แนวทางระมัดระวังไว้ก่อน)</div>
   </div>
   <div class="field">
     <label>พื้นที่ติดตั้งที่มี</label>
@@ -447,6 +483,10 @@ document.getElementById('wwType').addEventListener('click', (e)=>{
   chip.classList.add('active');
   wwType = chip.dataset.val;
   applyWwDefaults(wwType);
+});
+
+document.getElementById('standard').addEventListener('change', (e)=>{
+  document.getElementById('roParamsField').style.display = (e.target.value === 'reuse') ? 'block' : 'none';
 });
 
 let advOn = false;
@@ -709,9 +749,49 @@ function calculate(){
   }
 
   if(reuse){
-    badges.push({cls:'rust', txt:'เกรดนำน้ำกลับมาใช้ใหม่ — ควรพิจารณาระบบกรองละเอียดเพิ่มเติมตามวัตถุประสงค์การใช้น้ำ'});
-    train.push({t:'ระบบกรองขั้นสูงเพื่อนำน้ำกลับมาใช้ใหม่ (Activated Carbon / RO)', d:'ขัดคุณภาพน้ำจาก MBR ให้ปลอดภัยตามวัตถุประสงค์การนำกลับมาใช้ (รดน้ำต้นไม้/ล้างพื้น/หม้อไอน้ำ/กระบวนการผลิต) — ระดับความเข้มงวดขึ้นกับการใช้งานปลายทางจริง ควรปรึกษาผู้เชี่ยวชาญเฉพาะทาง'});
-    equip.push({name:'ถังคาร์บอนกรองกลิ่น/สี + ชุด RO (ถ้าจำเป็นตามคุณภาพน้ำที่ต้องการ)', price: tierPrice(Q,200000,500000,1200000), optional:true, maintRate:0.08});
+    badges.push({cls:'rust', txt:'เกรดนำน้ำกลับมาใช้ใหม่ — ควรพิจารณาระบบกรองละเอียดเพิ่มเติมตามวัตถุประสงค์การใช้น้ำ เลือกได้ตามความเข้มงวดที่ต้องการ (คาร์บอน/RO/ทั้งคู่)'});
+    train.push({t:'ระบบกรองขั้นสูงเพื่อนำน้ำกลับมาใช้ใหม่', d:'ขัดคุณภาพน้ำจาก MBR ให้ปลอดภัยตามวัตถุประสงค์การนำกลับมาใช้ (รดน้ำต้นไม้/ล้างพื้น/หม้อไอน้ำ/กระบวนการผลิต) — ระดับความเข้มงวดขึ้นกับการใช้งานปลายทางจริง ควรปรึกษาผู้เชี่ยวชาญเฉพาะทาง'});
+
+    const roPercent = parseFloat(document.getElementById('roPercent').value) || 50;
+    const rejectPercent = parseFloat(document.getElementById('rejectPercent').value) || 40;
+    const Q_toRO = Q * (roPercent/100);
+    const Q_reject = Q_toRO * (rejectPercent/100);
+
+    equip.push({name:'ถังคาร์บอนกรองกลิ่น/สี (Activated Carbon Filter) — สำหรับ reuse ทั่วไป เช่น รดน้ำต้นไม้/ล้างพื้น', price: tierPrice(Math.max(Q_toRO,1),100000,250000,600000), optional:true, maintRate:0.08});
+    equip.push({name:`ชุด RO (Reverse Osmosis) — ขนาดตามน้ำที่ส่งเข้า RO จริง ${fmt(roPercent,0)}% ของ Q (${fmt(Q_toRO)} m³/day) — สำหรับ reuse ที่ต้องการความบริสุทธิ์สูง เช่น น้ำป้อนหม้อไอน้ำ/กระบวนการผลิต`, price: tierPrice(Math.max(Q_toRO,1),300000,800000,2000000), optional:true, maintRate:0.10});
+
+    train.push({t:'จัดการน้ำ Reject จากระบบ RO', d:`น้ำบำบัดแล้ว ${fmt(roPercent,0)}% (${fmt(Q_toRO)} m³/day) ถูกส่งเข้า RO — ในจำนวนนี้ ${fmt(rejectPercent,0)}% (${fmt(Q_reject)} m³/day) จะออกมาเป็น Reject ที่มีความเค็ม/TDS เข้มข้นสูง ไม่ควรวนกลับเข้าระบบชีวภาพ ต้องจัดการแยกต่างหาก (ปล่อยท่อรวมถ้าเกลือไม่เกินมาตรฐาน / ส่งกำจัดภายนอก / ระบบ Zero Liquid Discharge)`});
+    badges.push({cls:'rust', txt:`RO จะสร้างน้ำ Reject ประมาณ ${fmt(Q_reject)} m³/day (ความเค็มสูง) — ต้องวางแผนกำจัดแยกต่างหาก ไม่สามารถวนกลับเข้าระบบชีวภาพได้`});
+
+    const sewerFlowVal = parseFloat(document.getElementById('sewerFlow').value);
+    const sewerTDSVal = parseFloat(document.getElementById('sewerTDS').value);
+    const sewerTDSLimitVal = parseFloat(document.getElementById('sewerTDSLimit').value);
+    const rejectTDSVal = parseFloat(document.getElementById('rejectTDS').value);
+    const massBalanceReady = [sewerFlowVal, sewerTDSVal, sewerTDSLimitVal, rejectTDSVal].every(v => isFinite(v) && v > 0);
+
+    let needHoldingTank = true; // cautious default when data not provided
+
+    if(massBalanceReady){
+      const C_mixed = (sewerFlowVal*sewerTDSVal + Q_reject*rejectTDSVal) / (sewerFlowVal + Q_reject);
+      train.push({t:'ตรวจสอบ Mass Balance การเจือจาง Reject ในท่อรวม', d:`C_ผสม = (Q_ท่อรวม×TDS_ท่อรวม + Q_reject×TDS_reject) / (Q_ท่อรวม + Q_reject) = (${fmt(sewerFlowVal,0)}×${fmt(sewerTDSVal,0)} + ${fmt(Q_reject)}×${fmt(rejectTDSVal,0)}) / (${fmt(sewerFlowVal,0)}+${fmt(Q_reject)}) = ${fmt(C_mixed,0)} mg/L เทียบกับมาตรฐาน ${fmt(sewerTDSLimitVal,0)} mg/L`});
+
+      if(C_mixed <= sewerTDSLimitVal){
+        needHoldingTank = false;
+        badges.push({cls:'sage', txt:`Mass Balance ผ่าน — ปล่อย Reject ${fmt(Q_reject)} m³/day ลงท่อรวมได้เลยแบบต่อเนื่อง (TDS ผสม ${fmt(C_mixed,0)} mg/L ต่ำกว่ามาตรฐาน ${fmt(sewerTDSLimitVal,0)} mg/L) ไม่จำเป็นต้องมีถังพัก Reject เพิ่ม — ยกเลิกรายการถังพัก Reject ด้านล่างได้`});
+      } else {
+        const Q_rejectMax = sewerFlowVal*(sewerTDSLimitVal - sewerTDSVal)/(rejectTDSVal - sewerTDSLimitVal);
+        if(Q_rejectMax <= 0){
+          badges.push({cls:'rust', txt:`ท่อรวมมี TDS พื้นฐาน (${fmt(sewerTDSVal,0)} mg/L) ใกล้เคียง/เกินมาตรฐานอยู่แล้ว (${fmt(sewerTDSLimitVal,0)} mg/L) — ไม่มีพื้นที่เจือจางเหลือให้ Reject เลย ต้องมีถังพัก + วางแผนกำจัดวิธีอื่น (ส่งกำจัดภายนอก/ZLD) ไม่ใช่แค่หน่วงเวลาปล่อย`});
+        } else {
+          badges.push({cls:'amber', txt:`Mass Balance ไม่ผ่านแบบต่อเนื่อง — ท่อรวมเจือจางได้สูงสุด ${fmt(Q_rejectMax)} m³/day แต่มี Reject จริง ${fmt(Q_reject)} m³/day ควรมีถังพัก Reject เพื่อทยอยปล่อยในช่วงที่ท่อรวมมีปริมาณน้ำมาก/เจือจางได้ดีกว่า`});
+        }
+      }
+    } else {
+      badges.push({cls:'amber', txt:'ยังไม่ได้กรอกข้อมูลท่อรวมครบ (อัตราการไหล/TDS พื้นฐาน/มาตรฐาน/TDS ของ Reject) — แนะนำให้มีถังพัก Reject ไว้ก่อนตามแนวทางระมัดระวัง จนกว่าจะตรวจสอบ Mass Balance ได้จริง'});
+    }
+
+    civilItems.push({name:'งานโยธาถังพักน้ำ Reject จาก RO', price: Math.max(30000, Math.round(Q_reject*3*4000))});
+    equip.push({name:`ถังพัก Reject + ปั๊มส่งไปกำจัด/ปล่อยทิ้ง${massBalanceReady && !needHoldingTank ? ' (ตาม Mass Balance อาจไม่จำเป็น — ยกเลิกได้)' : ''}`, price: tierPrice(Math.max(Q_reject,1),30000,80000,200000), optional:true, maintRate:0.06});
   }
 
   train.push({t:'ระบบฆ่าเชื้อ (Disinfection)', d: wwType==='hospital' ? 'จำเป็นอย่างยิ่งสำหรับน้ำเสียโรงพยาบาล เพื่อกำจัดเชื้อโรค' : 'ฆ่าเชื้อก่อนปล่อยทิ้งตามมาตรฐาน'});
