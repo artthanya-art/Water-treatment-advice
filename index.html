@@ -880,7 +880,7 @@ function calculate(){
 
       if(C_mixed <= sewerTDSLimitVal){
         needHoldingTank = false;
-        badges.push({cls:'sage', txt:`Mass Balance ผ่าน — ปล่อย Reject ${fmt(Q_reject)} m³/day ลงท่อรวมได้เลยแบบต่อเนื่อง (TDS ผสม ${fmt(C_mixed,0)} mg/L ต่ำกว่ามาตรฐาน ${fmt(sewerTDSLimitVal,0)} mg/L) ไม่จำเป็นต้องมีถังพัก Reject เพิ่ม — ยกเลิกรายการถังพัก Reject ด้านล่างได้`});
+        badges.push({cls:'sage', txt:`Mass Balance ผ่าน — ปล่อย Reject ${fmt(Q_reject)} m³/day ลงท่อรวมได้เลยแบบต่อเนื่อง (TDS ผสม ${fmt(C_mixed,0)} mg/L ต่ำกว่ามาตรฐาน ${fmt(sewerTDSLimitVal,0)} mg/L) — ปิดรายการถังพัก Reject ให้อัตโนมัติในงบด้านล่าง (เปิดกลับได้ถ้าต้องการสำรองเผื่อไว้)`});
       } else {
         const Q_rejectMax = sewerFlowVal*(sewerTDSLimitVal - sewerTDSVal)/(rejectTDSVal - sewerTDSLimitVal);
         if(Q_rejectMax <= 0){
@@ -893,8 +893,17 @@ function calculate(){
       badges.push({cls:'amber', txt:'ยังไม่ได้กรอกข้อมูลท่อรวมครบ (อัตราการไหล/TDS พื้นฐาน/มาตรฐาน/TDS ของ Reject) — แนะนำให้มีถังพัก Reject ไว้ก่อนตามแนวทางระมัดระวัง จนกว่าจะตรวจสอบ Mass Balance ได้จริง'});
     }
 
-    civilItems.push({name:'งานโยธาถังพักน้ำ Reject จาก RO', price: Math.max(30000, Math.round(Q_reject*3*4000))});
-    equip.push({name:`ถังพัก Reject + ปั๊มส่งไปกำจัด/ปล่อยทิ้ง${massBalanceReady && !needHoldingTank ? ' (ตาม Mass Balance อาจไม่จำเป็น — ยกเลิกได้)' : ''}`, price: tierPrice(Math.max(Q_reject,1),30000,80000,200000), optional:true, maintRate:0.06});
+    const rejectTankNeeded = !massBalanceReady || needHoldingTank; // cautious default: needed unless mass balance explicitly clears it
+    if(rejectTankNeeded){
+      civilItems.push({name:'งานโยธาถังพักน้ำ Reject จาก RO', price: Math.max(30000, Math.round(Q_reject*3*4000))});
+    }
+    equip.push({
+      name: `ถังพัก Reject + ปั๊มส่งไปกำจัด/ปล่อยทิ้ง${rejectTankNeeded ? '' : ' (ตาม Mass Balance ไม่จำเป็น — ปิดไว้ให้อัตโนมัติ เปิดใช้ได้ถ้าต้องการสำรอง)'}`,
+      price: tierPrice(Math.max(Q_reject,1),30000,80000,200000),
+      optional: true,
+      maintRate: 0.06,
+      defaultChecked: rejectTankNeeded
+    });
   }
 
   train.push({t:'ระบบฆ่าเชื้อ (Disinfection)', d: wwType==='hospital' ? 'จำเป็นอย่างยิ่งสำหรับน้ำเสียโรงพยาบาล เพื่อกำจัดเชื้อโรค' : 'ฆ่าเชื้อก่อนปล่อยทิ้งตามมาตรฐาน'});
@@ -989,7 +998,18 @@ function calculate(){
   else if(dewater.name.includes('Centrifuge')) dewaterPrice = tierPrice(sludgeKgDay,1200000,2000000,3500000);
   else if(dewater.name.includes('Belt Press')) dewaterPrice = tierPrice(sludgeKgDay,600000,1000000,1800000);
   else dewaterPrice = tierPrice(sludgeKgDay,350000,600000,900000);
-  equip.push({name:`เครื่องรีดตะกอน: ${dewater.name} + ปั๊มจ่ายโพลิเมอร์ (Polymer Dosing)`, price: dewaterPrice, optional:true, maintRate:0.07});
+
+  const dewateringMachineNeeded = sludgeKgDay > 50;
+  if(!dewateringMachineNeeded){
+    badges.push({cls:'sage', txt:`ตะกอนน้อย (${fmt(sludgeKgDay)} kg/day ≤ 50) — อาจไม่จำเป็นต้องมีเครื่องรีดตะกอน ใช้ลานตากตะกอน (ถ้ามีพื้นที่) หรือรถดูดตะกอนไปกำจัดแทนได้ ปิดรายการเครื่องรีดตะกอนให้อัตโนมัติในงบด้านล่าง (เปิดกลับได้ถ้าต้องการ)`});
+  }
+  equip.push({
+    name: `เครื่องรีดตะกอน: ${dewater.name} + ปั๊มจ่ายโพลิเมอร์ (Polymer Dosing)${dewateringMachineNeeded ? '' : ' (ตะกอนน้อย — อาจใช้ลานตากตะกอน/รถดูดแทนได้ ปิดไว้ให้อัตโนมัติ)'}`,
+    price: dewaterPrice,
+    optional: true,
+    maintRate: 0.07,
+    defaultChecked: dewateringMachineNeeded
+  });
 
   // --- Annual OPEX estimate: electricity, chemicals, labor ---
   const ELEC_RATE = 4.5; // THB/kWh, typical Thai industrial rate
@@ -1156,7 +1176,7 @@ function calculate(){
   document.getElementById('equipList').innerHTML = equip.map((e,i)=>`
     <div class="equip-row">
       <div class="left">
-        <input type="checkbox" id="eqchk_${i}" checked ${e.optional ? '' : 'disabled'} data-maintrate="${e.maintRate}" onchange="updateTotal()">
+        <input type="checkbox" id="eqchk_${i}" ${e.defaultChecked === false ? '' : 'checked'} ${e.optional ? '' : 'disabled'} data-maintrate="${e.maintRate}" onchange="updateTotal()">
         <span class="name">${e.name}${e.optional ? '<span class="opt-tag">(Option)</span>' : ''}</span>
       </div>
       <div style="text-align:right; flex-shrink:0;">
