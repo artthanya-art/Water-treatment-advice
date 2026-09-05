@@ -361,6 +361,24 @@
         <thead><tr><th>หน่วย</th><th>ขนาด</th><th>เกณฑ์ที่ใช้</th></tr></thead>
         <tbody></tbody>
       </table>
+
+      <div class="panel-title" style="margin-top:16px;">พื้นที่ติดตั้งโดยประมาณ (Site Layout Area)</div>
+      <table class="spec" id="footprintTable">
+        <thead><tr><th>หน่วย</th><th>พื้นที่ฐาน (m²)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="row2" style="margin-top:12px;">
+        <div class="field">
+          <label>ตัวคูณพื้นที่รวม (Spacing Factor)</label>
+          <input type="number" id="spacingFactor" value="2.5" min="1" max="6" step="0.1" oninput="renderFootprintSummary()">
+        </div>
+        <div class="field">
+          <label>ระยะเผื่อทางเดิน/ซ่อมบำรุงรอบถัง (m ต่อด้าน)</label>
+          <input type="number" id="clearanceMeters" value="1.5" min="0" max="5" step="0.1" oninput="renderFootprintSummary()">
+        </div>
+      </div>
+      <table class="spec" id="footprintSummaryTable" style="margin-top:10px;"><tbody></tbody></table>
+      <div class="note" style="margin-top:10px;">พื้นที่ฐานคำนวณจาก ปริมาตรถัง ÷ ความลึกน้ำสมมติทั่วไปของแต่ละประเภทถัง (EQ/AS ~3.5-4.5m, UASB ~5m, MBBR/MBR ~4-4.5m, ถังพักตะกอน/reject ~3m) ส่วนถังตกตะกอน/กรองทรายคำนวณจากพื้นที่ผิวโดยตรงอยู่แล้ว (ไม่ต้องหารความลึก)<br><br><strong>ตัวคูณพื้นที่รวม (Spacing Factor)</strong> คูณพื้นที่ฐานรวมเพื่อประมาณพื้นที่ทั้งไซต์ที่ต้องใช้จริง ครอบคลุมทางเดิน/ถนนเข้าซ่อมบำรุง/พื้นที่วางอุปกรณ์เสริม (blower, ตู้ควบคุม) — ค่าเริ่มต้น 2.5 เท่า เป็นค่ากลางสำหรับผังแบบเรียงเส้นตรง (linear layout) ทั่วไป ถ้าผังซับซ้อน/มีอาคารคลุมควรเพิ่มเป็น 3-4 เท่า<br><br><strong>ความกว้างขั้นต่ำ</strong> ประมาณจาก √(พื้นที่ถังที่ใหญ่ที่สุด) + ระยะเผื่อทางเดินสองด้าน แล้วเทียบกับความกว้างขั้นต่ำสำหรับรถเข้าซ่อมบำรุง/ดูดตะกอน (6 เมตร) เลือกค่าที่มากกว่า — เป็นค่าประมาณคร่าวๆ ระดับแนวคิดเท่านั้น ไม่ใช่ผังจริง ควรให้วิศวกรจัดผังไซต์ (site layout) จริงก่อนตัดสินใจ</div>
     </div>
   </section>
 
@@ -580,6 +598,28 @@ function tierPrice(x, small, medium, large){
 
 const CIVIL_MAINT_RATE = 0.015; // 1.5%/year of civil capex — structural upkeep, painting, minor repairs
 
+function renderFootprintSummary(){
+  const items = window.currentFootprintItems;
+  const tbody = document.querySelector('#footprintSummaryTable tbody');
+  if(!items || !tbody) return;
+
+  const totalBaseArea = items.reduce((a,f)=>a+f.area, 0);
+  const spacingFactor = parseFloat(document.getElementById('spacingFactor').value) || 2.5;
+  const clearance = parseFloat(document.getElementById('clearanceMeters').value) || 1.5;
+  const totalSiteArea = totalBaseArea * spacingFactor;
+
+  const largestArea = items.reduce((max,f)=>Math.max(max,f.area), 0);
+  const largestSide = Math.sqrt(largestArea);
+  const widthFromLargestTank = largestSide + clearance*2;
+  const minWidth = Math.max(widthFromLargestTank, 6);
+
+  tbody.innerHTML = `
+    <tr><td class="label">พื้นที่ฐานรวม (ผลรวมทุกถัง)</td><td>${fmt(totalBaseArea)} m²</td></tr>
+    <tr><td class="label">พื้นที่ไซต์รวมโดยประมาณ (× ${fmt(spacingFactor,1)})</td><td>${fmt(totalSiteArea)} m²</td></tr>
+    <tr><td class="label">ความกว้างขั้นต่ำที่แนะนำ</td><td>${fmt(minWidth,1)} m</td></tr>
+  `;
+}
+
 function updateTotal(){
   let capexTotal = 0;
   let maintTotal = 0;
@@ -764,6 +804,7 @@ function calculate(){
   let sizing = [];
   let equip = [];
   let civilItems = [];
+  let footprintItems = [];
 
   // Pretreatment
   train.push({t:'ตะแกรงดักขยะ (Bar Screen)', d:'กรองเศษขยะ/ของแข็งขนาดใหญ่ก่อนเข้าระบบ'});
@@ -781,6 +822,7 @@ function calculate(){
   train.push({t:'ถังปรับสภาพ (Equalization Tank)', d:'ปรับอัตราการไหลและความเข้มข้นให้สม่ำเสมอก่อนเข้าระบบชีวภาพ'});
   sizing.push(['ถังปรับสภาพ (EQ Tank)', `${fmt(eqVol)} m³`, `HRT ${eqHRT} ชม.`]);
   civilItems.push({name:'งานโยธาถังปรับสภาพ (EQ Tank)', price: Math.round(eqVol*5000)});
+  footprintItems.push({name:'ถังปรับสภาพ (EQ Tank)', area: eqVol/3.5});
   equip.push({name:'เครื่องกวนผสม/เครื่องเติมอากาศในถัง EQ + ปั๊มสูบน้ำเสีย', price: tierPrice(Q,60000,150000,350000), optional:false, maintRate:0.06});
 
   if(poorBiodeg){
@@ -801,6 +843,7 @@ function calculate(){
     train.push({t:'ถังแอนแอโรบิก UASB', d:`COD สูง (${fmt(COD,0)} mg/L) เหมาะกับระบบไร้อากาศก่อน เพื่อลดภาระ COD จำนวนมาก`});
     sizing.push(['ถัง UASB', `${fmt(uasbVol)} m³`, `OLR ${uasbOLR} kgCOD/m³·day`]);
     civilItems.push({name:'งานโยธาถัง UASB', price: Math.round(uasbVol*7000)});
+    footprintItems.push({name:'ถัง UASB', area: uasbVol/5});
     equip.push({name:'ถัง UASB พร้อมระบบ Gas Collection และ Biogas Flare/Utilization', price: tierPrice(Q,300000,600000,1200000), optional:false, maintRate:0.05});
     mainProcess = 'uasb+aerobic';
   }
@@ -815,6 +858,7 @@ function calculate(){
       aerationVolM3 = vol;
       sizing.push(['ถังชีวภาพ MBR', `${fmt(vol)} m³`, `HRT ${hrt} ชม., MLSS สูง 8,000–12,000 mg/L`]);
       civilItems.push({name:'งานโยธาถังชีวภาพ MBR', price: Math.round(vol*11000)});
+      footprintItems.push({name:'ถังชีวภาพ MBR', area: vol/4});
       equip.push({name:'ชุดเมมเบรน MBR (Membrane Module) + เครื่องเติมอากาศ + ปั๊ม Permeate', price: tierPrice(Q,400000,900000,2200000), optional:false, maintRate:0.12});
       usingMBR = true;
       if(!highStrength){ mainProcess = 'mbr'; } else { mainProcess += '+mbr_polish'; }
@@ -825,6 +869,7 @@ function calculate(){
       aerationVolM3 = vol;
       sizing.push(['ถังชีวภาพ MBBR', `${fmt(vol)} m³`, `HRT ${hrt} ชม. (โดยประมาณ)`]);
       civilItems.push({name:'งานโยธาถังชีวภาพ MBBR', price: Math.round(vol*7500)});
+      footprintItems.push({name:'ถังชีวภาพ MBBR', area: vol/4.5});
       equip.push({name:'ตัวกลาง MBBR (Media) + เครื่องเติมอากาศ (Blower/Diffuser)', price: tierPrice(Q,180000,450000,1000000), optional:false, maintRate:0.06});
       if(!highStrength){ mainProcess = 'mbbr'; } else { mainProcess += '+mbbr_polish'; }
     }
@@ -835,11 +880,13 @@ function calculate(){
     train.push({t:'ระบบตะกอนเร่งแบบเติมอากาศเต็มที่ (Extended Aeration AS) หรือ SBR', d:'ระบบชีวภาพมาตรฐาน เหมาะกับพื้นที่ที่มีเพียงพอ ดูแลง่าย'});
     sizing.push(['ถังเติมอากาศ (Aeration Tank)', `${fmt(asVol)} m³`, `F/M ${FM} kgBOD/kgMLSS·day, MLSS ${MLSS*1000} mg/L`]);
     civilItems.push({name:'งานโยธาถังเติมอากาศ', price: Math.round(asVol*5000)});
+    footprintItems.push({name:'ถังเติมอากาศ (AS)', area: asVol/4.5});
     equip.push({name:'เครื่องเติมอากาศ (Blower + Diffuser หรือ Surface Aerator)', price: tierPrice(Q,150000,400000,900000), optional:false, maintRate:0.06});
     const clarArea = Q/P_slr;
     train.push({t:'ถังตกตะกอน (Secondary Clarifier)', d:'แยกตะกอนจุลินทรีย์ออกจากน้ำใส ก่อนปล่อยหรือบำบัดต่อ'});
     sizing.push(['ถังตกตะกอนที่ 2', `${fmt(clarArea)} m²`, `Surface Loading Rate ${P_slr} m³/m²·day`]);
     civilItems.push({name:'งานโยธาถังตกตะกอน', price: Math.round(clarArea*8000)});
+    footprintItems.push({name:'ถังตกตะกอน (Clarifier)', area: clarArea});
     equip.push({name:'เครื่องกวาดตะกอน (Sludge Scraper) + ปั๊ม Return Sludge (RAS)', price: tierPrice(Q,150000,350000,700000), optional:false, maintRate:0.06});
     if(!highStrength){ mainProcess = 'as'; } else { mainProcess += '+as_polish'; }
   }
@@ -850,6 +897,7 @@ function calculate(){
     train.push({t:'ถังกรองทราย (Sand Filter)', d:'ลด TSS ที่เหลือให้ต่ำกว่ามาตรฐานน้ำทิ้งลงแหล่งน้ำสาธารณะ'});
     sizing.push(['ถังกรองทราย', `พื้นที่กรอง ${fmt(Q/120,1)} m²`, 'Filtration Rate 120 m³/m²·day']);
     civilItems.push({name:'งานโยธาถังกรองทราย', price: Math.round((Q/120)*10000)});
+    footprintItems.push({name:'ถังกรองทราย', area: Q/120});
     equip.push({name:'ถังกรองทราย/คาร์บอน + ระบบล้างย้อน (Backwash)', price: tierPrice(Q,80000,180000,350000), optional:true, maintRate:0.05});
   } else if(strict && usingMBR){
     badges.push({cls:'sage', txt:'ใช้ MBR อยู่แล้ว — เมมเบรนกรองคุณภาพน้ำออกได้ตามมาตรฐานเข้มงวดโดยไม่ต้องมีถังกรองทรายเพิ่ม'});
@@ -900,6 +948,7 @@ function calculate(){
     const rejectTankNeeded = !massBalanceReady || needHoldingTank; // cautious default: needed unless mass balance explicitly clears it
     if(rejectTankNeeded){
       civilItems.push({name:'งานโยธาถังพักน้ำ Reject จาก RO', price: Math.max(30000, Math.round(Q_reject*3*4000))});
+      footprintItems.push({name:'ถังพักน้ำ Reject (RO)', area: Math.max(Q_reject*3, 5)/3});
     }
     equip.push({
       name: `ถังพัก Reject + ปั๊มส่งไปกำจัด/ปล่อยทิ้ง${rejectTankNeeded ? '' : ' (ตาม Mass Balance ไม่จำเป็น — ปิดไว้ให้อัตโนมัติ เปิดใช้ได้ถ้าต้องการสำรอง)'}`,
@@ -911,6 +960,8 @@ function calculate(){
   }
 
   train.push({t:'ระบบฆ่าเชื้อ (Disinfection)', d: wwType==='hospital' ? 'จำเป็นอย่างยิ่งสำหรับน้ำเสียโรงพยาบาล เพื่อกำจัดเชื้อโรค' : 'ฆ่าเชื้อก่อนปล่อยทิ้งตามมาตรฐาน'});
+  footprintItems.push({name:'ถังสัมผัสคลอรีน (Disinfection, HRT 30 นาที)', area: (Q*(0.5/24))/2});
+  footprintItems.push({name:'จุดตะแกรงดักขยะ + ทางเดินเข้าถึง (โดยประมาณ)', area: 6});
   equip.push({
     name: wwType==='hospital' ? 'ระบบคลอรีน + ถังสัมผัสคลอรีน (Chlorine Contact Tank) หรือ UV' : 'ถังสัมผัสคลอรีน (Chlorine Contact Tank)',
     price: wwType==='hospital' ? tierPrice(Q,150000,350000,700000) : tierPrice(Q,40000,100000,250000),
@@ -995,6 +1046,7 @@ function calculate(){
     <div class="note" style="margin-top:8px; background:var(--sage-bg); border-left-color:var(--sage);"><strong>ที่มาของตัวเลขตะกอน:</strong><br>${sludgeFormulaParts.join('<br>')}</div>
   `;
   civilItems.push({name:'งานโยธาถังพักตะกอน', price: Math.max(50000, Math.round(sludgeM3Day*3*5000))});
+  footprintItems.push({name:'ถังพักตะกอน', area: Math.max(sludgeM3Day*3, 10)/3});
   equip.push({name:'ถังพักตะกอน (Sludge Holding Tank) + ปั๊มตะกอน', price: Math.max(40000, Math.round(sludgeM3Day*3*3000)), optional:false, maintRate:0.06});
 
   let dewaterPrice;
@@ -1167,6 +1219,13 @@ function calculate(){
     <tr><td class="label">${r[0]}</td><td>${r[1]}</td><td class="label">${r[2]}</td></tr>
   `).join('');
 
+  // Render footprint table and store for summary calc
+  document.getElementById('footprintTable').querySelector('tbody').innerHTML = footprintItems.map(f=>`
+    <tr><td class="label">${f.name}</td><td>${fmt(f.area)}</td></tr>
+  `).join('');
+  window.currentFootprintItems = footprintItems;
+  renderFootprintSummary();
+
   // Render civil works table (editable price)
   document.getElementById('civilTable').querySelector('tbody').innerHTML = civilItems.map((c,i)=>`
     <tr>
@@ -1230,6 +1289,16 @@ function buildReportText(){
   document.querySelectorAll('#sizingTable tbody tr').forEach(r=>{
     const tds = r.querySelectorAll('td');
     lines.push(`- ${textOf(tds[0])}: ${textOf(tds[1])} (${textOf(tds[2])})`);
+  });
+  lines.push('');
+  lines.push('พื้นที่ติดตั้งโดยประมาณ (Site Layout Area):');
+  document.querySelectorAll('#footprintTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${textOf(tds[0])}: ${textOf(tds[1])} m²`);
+  });
+  document.querySelectorAll('#footprintSummaryTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${textOf(tds[0])}: ${textOf(tds[1])}`);
   });
   lines.push('');
   lines.push('งานโยธา (Civil Works) — ราคาก่อสร้าง / บำรุงรักษาต่อปี:');
@@ -1325,6 +1394,9 @@ function buildReportHTML(){
     <div>${document.getElementById('trainList').innerHTML}</div>
     <h2>ขนาดถัง/หน่วยบำบัด</h2>
     <table>${document.getElementById('sizingTable').innerHTML}</table>
+    <h2>พื้นที่ติดตั้งโดยประมาณ (Site Layout Area)</h2>
+    <table>${document.getElementById('footprintTable').innerHTML}</table>
+    <table>${document.getElementById('footprintSummaryTable').innerHTML}</table>
     <h2>งานโยธา (Civil Works)</h2>
     <table><tr><th>รายการ</th><th>ราคาก่อสร้าง</th><th>บำรุงรักษา/ปี</th></tr>${Array.from(document.querySelectorAll('#civilTable tbody tr')).map(r=>{
       const tds = r.querySelectorAll('td');
