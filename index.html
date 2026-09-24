@@ -130,8 +130,20 @@
   .equip-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line);}
   .equip-row:last-child{border-bottom:none;}
   .equip-row .left{display:flex; align-items:flex-start; gap:9px; flex:1; min-width:0;}
+  .price-box{text-align:right; flex-shrink:0;}
+
+  @media (max-width: 480px){
+    .equip-row{flex-direction:column; align-items:stretch; gap:6px;}
+    .equip-row .left{flex:none; width:100%;}
+    .price-box{
+      text-align:left; width:100%; flex-shrink:1;
+      display:flex; align-items:center; gap:10px; padding-left:27px;
+    }
+    .price-box .maint-display{margin-top:0 !important;}
+  }
   .equip-row input[type=checkbox]{margin-top:3px; flex-shrink:0; width:18px; height:18px; accent-color:var(--steel-deep);}
   .equip-row .name{font-size:13.5px;}
+  .spec-line{font-size:11.5px; color:var(--ink-soft); margin-top:2px; line-height:1.4;}
   .equip-row .opt-tag{font-size:10.5px; color:var(--amber); margin-left:6px;}
   .equip-row .price{font-family:'IBM Plex Mono',monospace; font-size:13px; white-space:nowrap; flex-shrink:0;}
   .price-edit{
@@ -351,6 +363,8 @@
       <div id="badges"></div>
       <div class="panel-title">แผนผังกระบวนการ (Treatment Train)</div>
       <div class="train" id="trainList"></div>
+      <div class="panel-title" style="margin-top:16px;">แผนภาพกระบวนการ (Process Flow Diagram)</div>
+      <div id="flowDiagram" style="text-align:center;"></div>
     </div>
   </section>
 
@@ -577,6 +591,69 @@ function fmt(n, d=1){
 
 function fmtTHB(n){
   return '฿' + Math.round(n).toLocaleString('en-US');
+}
+
+function escapeXml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function wrapText(text, maxChars, maxLines){
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+  for(const w of words){
+    const test = current ? current+' '+w : w;
+    if(test.length > maxChars && current){
+      lines.push(current);
+      current = w;
+      if(lines.length >= maxLines) break;
+    } else {
+      current = test;
+    }
+  }
+  if(current && lines.length < maxLines) lines.push(current);
+  const consumedLen = lines.join(' ').length;
+  if(lines.length === maxLines && consumedLen < text.length){
+    lines[lines.length-1] = lines[lines.length-1].slice(0, maxChars-1) + '…';
+  }
+  return lines;
+}
+
+function buildFlowDiagramSVG(trainArr){
+  if(!trainArr || trainArr.length === 0) return '';
+  const boxW = 320, boxH = 64, gapY = 34, padX = 20, padTop = 14;
+  const totalW = boxW + padX*2;
+  const totalH = padTop*2 + trainArr.length*boxH + (trainArr.length-1)*gapY;
+
+  let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:420px; height:auto; font-family:'IBM Plex Sans Thai',sans-serif;">`;
+
+  trainArr.forEach((s,i)=>{
+    const y = padTop + i*(boxH+gapY);
+    const x = padX;
+    const cy = y + boxH/2;
+
+    svg += `<rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" rx="8" fill="#FFFFFF" stroke="#1F2C33" stroke-width="1.5"/>`;
+    svg += `<circle cx="${x+26}" cy="${cy}" r="14" fill="#1F2C33"/>`;
+    svg += `<text x="${x+26}" y="${cy+4.5}" text-anchor="middle" font-size="12" fill="#FFFFFF" font-family="'IBM Plex Mono',monospace">${i+1}</text>`;
+
+    const lines = wrapText(s.t, 27, 2);
+    const lineHeight = 15;
+    const startY = cy - ((lines.length-1)*lineHeight)/2 + 4;
+    lines.forEach((line, li)=>{
+      svg += `<text x="${x+52}" y="${startY+li*lineHeight}" font-size="12.5" fill="#1F2C33">${escapeXml(line)}</text>`;
+    });
+
+    if(i < trainArr.length-1){
+      const ax = x + boxW/2;
+      const ay1 = y + boxH;
+      const ay2 = y + boxH + gapY;
+      svg += `<line x1="${ax}" y1="${ay1}" x2="${ax}" y2="${ay2-8}" stroke="#5B6B72" stroke-width="2"/>`;
+      svg += `<polygon points="${ax-5},${ay2-8} ${ax+5},${ay2-8} ${ax},${ay2}" fill="#5B6B72"/>`;
+    }
+  });
+
+  svg += `</svg>`;
+  return svg;
 }
 
 function tierPrice(x, small, medium, large){
@@ -808,12 +885,12 @@ function calculate(){
 
   // Pretreatment
   train.push({t:'ตะแกรงดักขยะ (Bar Screen)', d:'กรองเศษขยะ/ของแข็งขนาดใหญ่ก่อนเข้าระบบ'});
-  equip.push({name:'ตะแกรงดักขยะ (Manual/Mechanical Bar Screen)', price: tierPrice(Q,20000,60000,180000), optional:false, maintRate:0.05});
+  equip.push({name:'ตะแกรงดักขยะ (Manual/Mechanical Bar Screen)', price: tierPrice(Q,20000,60000,180000), optional:false, maintRate:0.05, spec:`ช่องตะแกรง 10-20mm, วัสดุ SS304, รองรับ Q ${fmt(Q)} m³/day`});
 
   if(oilHigh){
     badges.push({cls:'amber', txt:'น้ำมัน/ไขมันสูง ต้องดักไขมันก่อน'});
     train.push({t:'บ่อดักไขมัน / DAF (Dissolved Air Flotation)', d:`Oil & Grease ${OIL} mg/L ต้องแยกก่อนเข้าระบบชีวภาพ`});
-    equip.push({name:'เครื่อง DAF หรือถังดักไขมัน (Grease Trap)', price: Math.max(80000, Math.round(Q*400)), optional:true, maintRate:0.06});
+    equip.push({name:'เครื่อง DAF หรือถังดักไขมัน (Grease Trap)', price: Math.max(80000, Math.round(Q*400)), optional:true, maintRate:0.06, spec:`HRT 20-30 นาที, Air:Solids ratio 0.02-0.03, รองรับ Q ${fmt(Q)} m³/day`});
   }
 
   // Equalization
@@ -823,12 +900,12 @@ function calculate(){
   sizing.push(['ถังปรับสภาพ (EQ Tank)', `${fmt(eqVol)} m³`, `HRT ${eqHRT} ชม.`]);
   civilItems.push({name:'งานโยธาถังปรับสภาพ (EQ Tank)', price: Math.round(eqVol*5000)});
   footprintItems.push({name:'ถังปรับสภาพ (EQ Tank)', area: eqVol/3.5});
-  equip.push({name:'เครื่องกวนผสม/เครื่องเติมอากาศในถัง EQ + ปั๊มสูบน้ำเสีย', price: tierPrice(Q,60000,150000,350000), optional:false, maintRate:0.06});
+  equip.push({name:'เครื่องกวนผสม/เครื่องเติมอากาศในถัง EQ + ปั๊มสูบน้ำเสีย', price: tierPrice(Q,60000,150000,350000), optional:false, maintRate:0.06, spec:`ปริมาตรถัง ${fmt(eqVol)} m³, กำลังเครื่องกวน ~${fmt(eqVol*0.015,1)} kW, ปั๊มสูบ ~${fmt(Q/24,1)} m³/hr`});
 
   if(poorBiodeg){
     badges.push({cls:'rust', txt:'ค่า BOD/COD ต่ำ (ย่อยสลายยาก) — ต้องใช้ระบบเคมีช่วย'});
     train.push({t:'ระบบเคมี (Coagulation-Flocculation + DAF/Clarifier)', d:'จับตกตะกอนสารมลพิษที่จุลินทรีย์ย่อยยาก ก่อนหรือแทนระบบชีวภาพ'});
-    equip.push({name:'ถังโคแอกกูเลชั่น/ฟล็อกคูเลชั่น + ปั๊มจ่ายสารเคมี (PAC/Polymer)', price: tierPrice(Q,150000,300000,600000), optional:true, maintRate:0.06});
+    equip.push({name:'ถังโคแอกกูเลชั่น/ฟล็อกคูเลชั่น + ปั๊มจ่ายสารเคมี (PAC/Polymer)', price: tierPrice(Q,150000,300000,600000), optional:true, maintRate:0.06, spec:`อัตราจ่าย PAC ~80 mg/L (${fmt(Q*80/1000,1)} kg/day), ถังผสม HRT 20-30 นาที`});
   } else if(moderateBiodeg){
     badges.push({cls:'amber', txt:'ค่า BOD/COD ปานกลาง — ควรมีระบบปรับสภาพ/สารเสริมจุลินทรีย์'});
   } else {
@@ -844,7 +921,7 @@ function calculate(){
     sizing.push(['ถัง UASB', `${fmt(uasbVol)} m³`, `OLR ${uasbOLR} kgCOD/m³·day`]);
     civilItems.push({name:'งานโยธาถัง UASB', price: Math.round(uasbVol*7000)});
     footprintItems.push({name:'ถัง UASB', area: uasbVol/5});
-    equip.push({name:'ถัง UASB พร้อมระบบ Gas Collection และ Biogas Flare/Utilization', price: tierPrice(Q,300000,600000,1200000), optional:false, maintRate:0.05});
+    equip.push({name:'ถัง UASB พร้อมระบบ Gas Collection และ Biogas Flare/Utilization', price: tierPrice(Q,300000,600000,1200000), optional:false, maintRate:0.05, spec:`OLR ${uasbOLR} kgCOD/m³·day, HRT ${fmt(uasbVol/Q*24,1)} ชม., มีระบบ Flare ความปลอดภัยก๊าซมีเทน`});
     mainProcess = 'uasb+aerobic';
   }
 
@@ -859,7 +936,7 @@ function calculate(){
       sizing.push(['ถังชีวภาพ MBR', `${fmt(vol)} m³`, `HRT ${hrt} ชม., MLSS สูง 8,000–12,000 mg/L`]);
       civilItems.push({name:'งานโยธาถังชีวภาพ MBR', price: Math.round(vol*11000)});
       footprintItems.push({name:'ถังชีวภาพ MBR', area: vol/4});
-      equip.push({name:'ชุดเมมเบรน MBR (Membrane Module) + เครื่องเติมอากาศ + ปั๊ม Permeate', price: tierPrice(Q,400000,900000,2200000), optional:false, maintRate:0.12});
+      equip.push({name:'ชุดเมมเบรน MBR (Membrane Module) + เครื่องเติมอากาศ + ปั๊ม Permeate', price: tierPrice(Q,400000,900000,2200000), optional:false, maintRate:0.12, spec:`พื้นที่เมมเบรนโดยประมาณ ~${fmt(Q*1000/24/15,0)} m² (Flux 15 LMH), รูกรอง UF/MF 0.03-0.4 micron`});
       usingMBR = true;
       if(!highStrength){ mainProcess = 'mbr'; } else { mainProcess += '+mbr_polish'; }
     } else {
@@ -870,7 +947,7 @@ function calculate(){
       sizing.push(['ถังชีวภาพ MBBR', `${fmt(vol)} m³`, `HRT ${hrt} ชม. (โดยประมาณ)`]);
       civilItems.push({name:'งานโยธาถังชีวภาพ MBBR', price: Math.round(vol*7500)});
       footprintItems.push({name:'ถังชีวภาพ MBBR', area: vol/4.5});
-      equip.push({name:'ตัวกลาง MBBR (Media) + เครื่องเติมอากาศ (Blower/Diffuser)', price: tierPrice(Q,180000,450000,1000000), optional:false, maintRate:0.06});
+      equip.push({name:'ตัวกลาง MBBR (Media) + เครื่องเติมอากาศ (Blower/Diffuser)', price: tierPrice(Q,180000,450000,1000000), optional:false, maintRate:0.06, spec:'สัดส่วนตัวกลาง 40-60% ของปริมาตรถัง, พื้นที่ผิวจำเพาะ 500-800 m²/m³'});
       if(!highStrength){ mainProcess = 'mbbr'; } else { mainProcess += '+mbbr_polish'; }
     }
   } else {
@@ -881,13 +958,13 @@ function calculate(){
     sizing.push(['ถังเติมอากาศ (Aeration Tank)', `${fmt(asVol)} m³`, `F/M ${FM} kgBOD/kgMLSS·day, MLSS ${MLSS*1000} mg/L`]);
     civilItems.push({name:'งานโยธาถังเติมอากาศ', price: Math.round(asVol*5000)});
     footprintItems.push({name:'ถังเติมอากาศ (AS)', area: asVol/4.5});
-    equip.push({name:'เครื่องเติมอากาศ (Blower + Diffuser หรือ Surface Aerator)', price: tierPrice(Q,150000,400000,900000), optional:false, maintRate:0.06});
+    equip.push({name:'เครื่องเติมอากาศ (Blower + Diffuser หรือ Surface Aerator)', price: tierPrice(Q,150000,400000,900000), optional:false, maintRate:0.06, spec:'อัตราลมโดยประมาณ 1.0-1.5 Nm³ อากาศ/m³น้ำเสีย/ชม. (ค่าแม่นยำดูในโหมดวิศวกร)'});
     const clarArea = Q/P_slr;
     train.push({t:'ถังตกตะกอน (Secondary Clarifier)', d:'แยกตะกอนจุลินทรีย์ออกจากน้ำใส ก่อนปล่อยหรือบำบัดต่อ'});
     sizing.push(['ถังตกตะกอนที่ 2', `${fmt(clarArea)} m²`, `Surface Loading Rate ${P_slr} m³/m²·day`]);
     civilItems.push({name:'งานโยธาถังตกตะกอน', price: Math.round(clarArea*8000)});
     footprintItems.push({name:'ถังตกตะกอน (Clarifier)', area: clarArea});
-    equip.push({name:'เครื่องกวาดตะกอน (Sludge Scraper) + ปั๊ม Return Sludge (RAS)', price: tierPrice(Q,150000,350000,700000), optional:false, maintRate:0.06});
+    equip.push({name:'เครื่องกวาดตะกอน (Sludge Scraper) + ปั๊ม Return Sludge (RAS)', price: tierPrice(Q,150000,350000,700000), optional:false, maintRate:0.06, spec:`SLR ${P_slr} m³/m²·day, พื้นที่ผิว ${fmt(clarArea)} m², RAS pump 50-100% ของ Q`});
     if(!highStrength){ mainProcess = 'as'; } else { mainProcess += '+as_polish'; }
   }
 
@@ -898,7 +975,7 @@ function calculate(){
     sizing.push(['ถังกรองทราย', `พื้นที่กรอง ${fmt(Q/120,1)} m²`, 'Filtration Rate 120 m³/m²·day']);
     civilItems.push({name:'งานโยธาถังกรองทราย', price: Math.round((Q/120)*10000)});
     footprintItems.push({name:'ถังกรองทราย', area: Q/120});
-    equip.push({name:'ถังกรองทราย/คาร์บอน + ระบบล้างย้อน (Backwash)', price: tierPrice(Q,80000,180000,350000), optional:true, maintRate:0.05});
+    equip.push({name:'ถังกรองทราย/คาร์บอน + ระบบล้างย้อน (Backwash)', price: tierPrice(Q,80000,180000,350000), optional:true, maintRate:0.05, spec:'Filtration rate 120 m³/m²·day, Backwash rate 15-20 m³/m²·hr'});
   } else if(strict && usingMBR){
     badges.push({cls:'sage', txt:'ใช้ MBR อยู่แล้ว — เมมเบรนกรองคุณภาพน้ำออกได้ตามมาตรฐานเข้มงวดโดยไม่ต้องมีถังกรองทรายเพิ่ม'});
   }
@@ -912,8 +989,8 @@ function calculate(){
     const Q_toRO = Q * (roPercent/100);
     const Q_reject = Q_toRO * (rejectPercent/100);
 
-    equip.push({name:'ถังคาร์บอนกรองกลิ่น/สี (Activated Carbon Filter) — สำหรับ reuse ทั่วไป เช่น รดน้ำต้นไม้/ล้างพื้น', price: tierPrice(Math.max(Q_toRO,1),100000,250000,600000), optional:true, maintRate:0.08});
-    equip.push({name:`ชุด RO (Reverse Osmosis) — ขนาดตามน้ำที่ส่งเข้า RO จริง ${fmt(roPercent,0)}% ของ Q (${fmt(Q_toRO)} m³/day) — สำหรับ reuse ที่ต้องการความบริสุทธิ์สูง เช่น น้ำป้อนหม้อไอน้ำ/กระบวนการผลิต`, price: tierPrice(Math.max(Q_toRO,1),300000,800000,2000000), optional:true, maintRate:0.10});
+    equip.push({name:'ถังคาร์บอนกรองกลิ่น/สี (Activated Carbon Filter) — สำหรับ reuse ทั่วไป เช่น รดน้ำต้นไม้/ล้างพื้น', price: tierPrice(Math.max(Q_toRO,1),100000,250000,600000), optional:true, maintRate:0.08, spec:`Empty Bed Contact Time (EBCT) 15-20 นาที, รองรับ ${fmt(Q_toRO)} m³/day`});
+    equip.push({name:`ชุด RO (Reverse Osmosis) — ขนาดตามน้ำที่ส่งเข้า RO จริง ${fmt(roPercent,0)}% ของ Q (${fmt(Q_toRO)} m³/day) — สำหรับ reuse ที่ต้องการความบริสุทธิ์สูง เช่น น้ำป้อนหม้อไอน้ำ/กระบวนการผลิต`, price: tierPrice(Math.max(Q_toRO,1),300000,800000,2000000), optional:true, maintRate:0.10, spec:`Recovery ~${fmt(100-rejectPercent,0)}%, TDS Rejection &gt;95%, เมมเบรน Brackish Water RO (BWRO), รองรับ ${fmt(Q_toRO)} m³/day`});
 
     train.push({t:'จัดการน้ำ Reject จากระบบ RO', d:`น้ำบำบัดแล้ว ${fmt(roPercent,0)}% (${fmt(Q_toRO)} m³/day) ถูกส่งเข้า RO — ในจำนวนนี้ ${fmt(rejectPercent,0)}% (${fmt(Q_reject)} m³/day) จะออกมาเป็น Reject ที่มีความเค็ม/TDS เข้มข้นสูง ไม่ควรวนกลับเข้าระบบชีวภาพ ต้องจัดการแยกต่างหาก (ปล่อยท่อรวมถ้าเกลือไม่เกินมาตรฐาน / ส่งกำจัดภายนอก / ระบบ Zero Liquid Discharge)`});
     badges.push({cls:'rust', txt:`RO จะสร้างน้ำ Reject ประมาณ ${fmt(Q_reject)} m³/day (ความเค็มสูง) — ต้องวางแผนกำจัดแยกต่างหาก ไม่สามารถวนกลับเข้าระบบชีวภาพได้`});
@@ -955,7 +1032,8 @@ function calculate(){
       price: tierPrice(Math.max(Q_reject,1),30000,80000,200000),
       optional: true,
       maintRate: 0.06,
-      defaultChecked: rejectTankNeeded
+      defaultChecked: rejectTankNeeded,
+      spec: `HRT 3 วัน, ปริมาตร ${fmt(Q_reject*3)} m³`
     });
   }
 
@@ -966,7 +1044,8 @@ function calculate(){
     name: wwType==='hospital' ? 'ระบบคลอรีน + ถังสัมผัสคลอรีน (Chlorine Contact Tank) หรือ UV' : 'ถังสัมผัสคลอรีน (Chlorine Contact Tank)',
     price: wwType==='hospital' ? tierPrice(Q,150000,350000,700000) : tierPrice(Q,40000,100000,250000),
     optional:false,
-    maintRate:0.05
+    maintRate:0.05,
+    spec: wwType==='hospital' ? 'HRT สัมผัส 30 นาที, โดสคลอรีน ~5 mg/L หรือ UV dose 30-40 mJ/cm²' : 'HRT สัมผัส 30 นาที, โดสคลอรีน ~5 mg/L'
   });
 
   if(wwType==='hospital'){
@@ -1047,7 +1126,7 @@ function calculate(){
   `;
   civilItems.push({name:'งานโยธาถังพักตะกอน', price: Math.max(50000, Math.round(sludgeM3Day*3*5000))});
   footprintItems.push({name:'ถังพักตะกอน', area: Math.max(sludgeM3Day*3, 10)/3});
-  equip.push({name:'ถังพักตะกอน (Sludge Holding Tank) + ปั๊มตะกอน', price: Math.max(40000, Math.round(sludgeM3Day*3*3000)), optional:false, maintRate:0.06});
+  equip.push({name:'ถังพักตะกอน (Sludge Holding Tank) + ปั๊มตะกอน', price: Math.max(40000, Math.round(sludgeM3Day*3*3000)), optional:false, maintRate:0.06, spec:`HRT 3 วัน, ปริมาตร ${fmt(sludgeM3Day*3)} m³`});
 
   let dewaterPrice;
   if(dewater.name.includes('Filter Press')) dewaterPrice = tierPrice(sludgeKgDay,500000,900000,1500000);
@@ -1064,7 +1143,8 @@ function calculate(){
     price: dewaterPrice,
     optional: true,
     maintRate: 0.07,
-    defaultChecked: dewateringMachineNeeded
+    defaultChecked: dewateringMachineNeeded,
+    spec: `ความสามารถ ~${fmt(sludgeKgDay/8,1)} kgDS/hr (เดินเครื่อง 8 ชม./วัน), %Solids หลังรีด ${dewater.solids}`
   });
 
   // --- Annual OPEX estimate: electricity, chemicals, labor ---
@@ -1214,6 +1294,8 @@ function calculate(){
     </div>
   `).join('');
 
+  document.getElementById('flowDiagram').innerHTML = buildFlowDiagramSVG(train);
+
   // Render sizing table
   document.getElementById('sizingTable').querySelector('tbody').innerHTML = sizing.map(r=>`
     <tr><td class="label">${r[0]}</td><td>${r[1]}</td><td class="label">${r[2]}</td></tr>
@@ -1240,9 +1322,12 @@ function calculate(){
     <div class="equip-row">
       <div class="left">
         <input type="checkbox" id="eqchk_${i}" ${e.defaultChecked === false ? '' : 'checked'} ${e.optional ? '' : 'disabled'} data-maintrate="${e.maintRate}" onchange="updateTotal()">
-        <span class="name">${e.name}${e.optional ? '<span class="opt-tag">(Option)</span>' : ''}</span>
+        <div>
+          <span class="name">${e.name}${e.optional ? '<span class="opt-tag">(Option)</span>' : ''}</span>
+          ${e.spec ? `<div class="spec-line">${e.spec}</div>` : ''}
+        </div>
       </div>
-      <div style="text-align:right; flex-shrink:0;">
+      <div class="price-box">
         <input type="number" class="price-edit" id="eq_price_${i}" value="${Math.round(e.price)}" min="0" data-maintrate="${e.maintRate}" oninput="updateTotal()">
         <div class="price maint-display" style="color:var(--ink-soft); font-size:11px; margin-top:2px;">~${fmtTHB(e.price*e.maintRate)}/ปี (${Math.round(e.maintRate*100)}%)</div>
       </div>
@@ -1309,14 +1394,16 @@ function buildReportText(){
     lines.push(`- ${textOf(tds[0])}: ${price} / ${textOf(tds[2])} ต่อปี`);
   });
   lines.push('');
-  lines.push('เครื่องจักร/อุปกรณ์ไฟฟ้า — ราคา / บำรุงรักษาต่อปี:');
+  lines.push('เครื่องจักร/อุปกรณ์ไฟฟ้า — ราคา / บำรุงรักษาต่อปี / สเปค:');
   document.querySelectorAll('#equipList .equip-row').forEach(row=>{
     const chk = row.querySelector('input[type=checkbox]');
     const name = textOf(row.querySelector('.name'));
     const priceInput = row.querySelector('.price-edit');
     const price = priceInput ? fmtTHB(parseFloat(priceInput.value)||0) : '';
     const maint = textOf(row.querySelector('.maint-display'));
-    lines.push(`- [${chk.checked ? 'x' : ' '}] ${name}: ${price} / ${maint}`);
+    const specEl = row.querySelector('.spec-line');
+    const spec = specEl ? textOf(specEl) : '';
+    lines.push(`- [${chk.checked ? 'x' : ' '}] ${name}: ${price} / ${maint}${spec ? ' | สเปค: '+spec : ''}`);
   });
   const pipingPct = textOf(document.getElementById('pipingPercent'));
   lines.push(`- ค่าท่อ+ติดตั้ง (${pipingPct}% ของอุปกรณ์ที่เลือก): ${textOf(document.getElementById('pipingCostDisplay'))} / ${textOf(document.getElementById('pipingMaintDisplay'))}`);
@@ -1404,12 +1491,14 @@ function buildReportHTML(){
       const price = priceInput ? fmtTHB(parseFloat(priceInput.value)||0) : tds[1].textContent;
       return `<tr><td>${tds[0].textContent}</td><td>${price}</td><td>${tds[2].textContent}</td></tr>`;
     }).join('')}</table>
-    <h2>เครื่องจักร/อุปกรณ์ไฟฟ้าที่เลือก (ราคา / บำรุงรักษาต่อปี)</h2>
+    <h2>เครื่องจักร/อุปกรณ์ไฟฟ้าที่เลือก (ราคา / บำรุงรักษาต่อปี / สเปค)</h2>
     <ul>${Array.from(document.querySelectorAll('#equipList .equip-row')).filter(r=>r.querySelector('input[type=checkbox]').checked).map(r=>{
       const priceInput = r.querySelector('.price-edit');
       const price = priceInput ? fmtTHB(parseFloat(priceInput.value)||0) : '';
       const maint = r.querySelector('.maint-display').textContent;
-      return `<li>${r.querySelector('.name').textContent.replace('(Option)','').trim()} — ${price} / ${maint}</li>`;
+      const specEl = r.querySelector('.spec-line');
+      const specText = specEl ? `<br><span style="font-size:12px; color:#5B6B72;">${specEl.innerHTML}</span>` : '';
+      return `<li>${r.querySelector('.name').textContent.replace('(Option)','').trim()} — ${price} / ${maint}${specText}</li>`;
     }).join('')}
     <li>ค่าท่อ+ติดตั้ง (${document.getElementById('pipingPercent').value}% ของอุปกรณ์ที่เลือก) — ${document.getElementById('pipingCostDisplay').textContent} / ${document.getElementById('pipingMaintDisplay').textContent}</li>
     <li>ค่าไฟฟ้า/ควบคุม (${document.getElementById('electricalPercent').value}% ของอุปกรณ์ที่เลือก) — ${document.getElementById('electricalCostDisplay').textContent} / ${document.getElementById('electricalMaintDisplay').textContent}</li>
