@@ -61,11 +61,34 @@
     font-size:15px; font-weight:600; cursor:pointer; margin-top:6px;
   }
   button.calc:active{transform:scale(0.99);}
+  button.calc-main{
+    width:100%; padding:19px; background:var(--steel-deep); color:#fff; border:none; border-radius:6px;
+    font-size:17px; font-weight:700; cursor:pointer; margin-top:14px;
+    box-shadow:0 5px 16px rgba(29,62,79,0.4);
+    letter-spacing:0.01em;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+  }
+  button.calc-main:active{transform:scale(0.98); box-shadow:0 2px 8px rgba(29,62,79,0.3);}
+  .results-divider{
+    display:flex; align-items:center; gap:12px; margin:28px 0 20px;
+  }
+  .results-divider::before, .results-divider::after{
+    content:''; flex:1; height:2px; background:var(--line-strong);
+  }
+  .results-divider span{
+    font-size:11.5px; font-weight:700; color:var(--ink-soft); letter-spacing:0.05em; white-space:nowrap;
+  }
   .btn-secondary{
     display:block; margin:10px auto 0; padding:9px 16px; background:#fff; color:var(--steel-deep);
     border:1.5px solid var(--steel-deep); border-radius:4px; font-size:13px; font-weight:600; cursor:pointer;
   }
   .btn-secondary:active{transform:scale(0.98);}
+  body.notes-hidden .note{display:none;}
+  .notes-toggle-btn{
+    margin:0 auto 18px; padding:6px 14px; background:#fff; color:var(--steel-deep);
+    border:1.5px solid var(--steel-deep); border-radius:20px; font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .notes-toggle-btn:active{transform:scale(0.96);}
   .error{color:var(--rust); font-size:12.5px; margin-top:5px; display:none;}
   .results{display:none;}
   .panel{
@@ -358,7 +381,10 @@
   </div>
 </section>
 
-<button class="calc" onclick="calculate()">คำนวณและแนะนำระบบ</button>
+<button class="calc-main" onclick="calculate()">▶ คำนวณและแนะนำระบบ</button>
+
+<div class="results-divider"><span>ผลลัพธ์การคำนวณ</span></div>
+<div style="text-align:center;"><button id="notesToggle" class="notes-toggle-btn" onclick="toggleNotes()">ซ่อนหมายเหตุ</button></div>
 
 <div class="results" id="results">
 
@@ -509,13 +535,11 @@
         <span class="lbl" style="font-size:13px; color:var(--ink-soft);">ค่าบำรุงรักษาโดยประมาณต่อปี</span>
         <span class="val mono" id="totalMaint" style="font-size:16px; color:var(--steel-deep);">฿0/ปี</span>
       </div>
-      <button class="btn-secondary" onclick="exportBOQCSV()">ดาวน์โหลดตาราง BOQ ทั้งโปรเจค (CSV/Excel)</button>
       <div class="note" style="margin-top:10px; background:var(--sage-bg); border-left-color:var(--sage);"><strong>แก้ไขราคาได้:</strong> คลิกที่ตัวเลขราคาในตารางงานโยธาหรือรายการอุปกรณ์ด้านบนเพื่อแก้ไขเป็นราคาจริงที่คุณมี (เช่น ใบเสนอราคาจากซัพพลายเออร์) ระบบจะคำนวณค่าบำรุงรักษา, OPEX และยอดรวมทั้งหมดใหม่ให้ทันที — กด "คำนวณ" ใหม่อีกครั้งเพื่อรีเซ็ตกลับเป็นค่าประมาณการเริ่มต้น</div>
       <div class="note" style="margin-top:10px;">ราคาก่อสร้าง/อุปกรณ์เป็นประมาณการอย่างหยาบจากค่าเฉลี่ยตลาดทั่วไป <strong>ราคาอุปกรณ์ถือว่ารวมค่าขนส่งมาถึงในประเทศแล้ว</strong> (เพราะเป็นราคาตลาดที่ซื้อขายจริงในไทย ไม่ใช่ราคาหน้าโรงงานต่างประเทศ) จึงไม่มีการบวกค่าขนส่งซ้ำอีกชั้น<br><br><strong>ค่าท่อ+วาล์ว</strong> คำนวณแบบละเอียดจากขนาดท่อจริง (สูตรความต่อเนื่อง D=√(4Q/πv)) + ความยาวประมาณจากผังไซต์ + จำนวนวาล์วต่อจุดต่อ (ดูรายละเอียดในตาราง Piping BOQ พร้อมหมายเหตุสูตรด้านล่างของตารางนั้น) ไม่ใช่ % คงที่แบบเดิมอีกต่อไป<br><br><strong>ค่าไฟฟ้า/ควบคุม</strong> คำนวณจากภาระไฟฟ้ารวมที่ติดตั้งจริง + จำนวนเครื่องมือวัดตามระดับการควบคุมที่เลือก (พื้นฐาน/PLC พื้นฐาน/SCADA เต็มรูปแบบ) ไม่ใช่ % คงที่เช่นกัน (ดูรายละเอียดในตาราง Electrical BOQ ด้านล่าง)<br><br>ต้นทุนระดับโปรเจค (ออกแบบ/ใบอนุญาต/VAT/Contingency) คำนวณต่อเนื่องกันตามลำดับ: (งานโยธา+อุปกรณ์+ท่อ+ไฟฟ้า/ควบคุม) → บวกออกแบบ+ใบอนุญาต → บวก VAT → บวก Contingency เป็นขั้นสุดท้าย รายละเอียดสูตรอยู่ในเอกสารอ้างอิงสูตร<br><br>ค่าบำรุงรักษา/ปี คิดเป็น % ของราคาแต่ละรายการ (งานโยธา ~1.5%/ปี, เครื่องจักรทั่วไป ~5-6%/ปี, เมมเบรน MBR ~12%/ปี, เครื่องรีดตะกอน ~7%/ปี, ท่อ+วาล์ว ~2%/ปี, ไฟฟ้า/ควบคุม ~4%/ปี) ครอบคลุมเฉพาะอะไหล่/ซ่อมบำรุงเครื่องจักรเท่านั้น — ค่าไฟ/สารเคมี/แรงงาน ดูเพิ่มเติมด้านล่าง</div>
 
       <div class="panel-title" style="margin-top:16px;">แผนภาพกระบวนการ (Process Flow Diagram)</div>
       <div id="flowDiagram" style="text-align:center;"></div>
-      <button class="btn-secondary" onclick="downloadSVGAsPNG('flowDiagram','treatment-flow-diagram.png')">ดาวน์โหลดแผนภาพกระบวนการเป็นรูปภาพ (PNG)</button>
       <div class="note" style="margin-top:10px;">แผนภาพนี้สร้างจาก<strong>รายการเครื่องจักร/อุปกรณ์ที่ติ๊กเลือกอยู่จริงด้านบน</strong> (ไม่ใช่แค่ขั้นตอนกระบวนการกว้างๆ ในข้อ 05) — ถ้ายกเลิกอุปกรณ์ optional รายการไหน แผนภาพจะอัปเดตตัดออกให้อัตโนมัติ</div>
     </div>
   </section>
@@ -580,6 +604,8 @@
     <div class="step-label"><span class="num">13</span><h2>ส่งออกรายงาน</h2></div>
     <div class="panel">
       <button class="calc" onclick="printReport()">พิมพ์รายงานเป็น PDF</button>
+      <button class="btn-secondary" onclick="downloadSVGAsPNG('flowDiagram','treatment-flow-diagram.png')">ดาวน์โหลดแผนภาพกระบวนการเป็นรูปภาพ (PNG)</button>
+      <button class="btn-secondary" onclick="exportBOQCSV()">ดาวน์โหลดตาราง BOQ ทั้งโปรเจค (CSV/Excel)</button>
     </div>
   </section>
 
@@ -653,6 +679,13 @@ function fmtTHB(n){
   return '฿' + Math.round(n).toLocaleString('en-US');
 }
 
+function toggleNotes(){
+  document.body.classList.toggle('notes-hidden');
+  const hidden = document.body.classList.contains('notes-hidden');
+  const btn = document.getElementById('notesToggle');
+  if(btn) btn.textContent = hidden ? 'แสดงหมายเหตุ' : 'ซ่อนหมายเหตุ';
+}
+
 function escapeXml(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
@@ -690,8 +723,8 @@ function getEquipSymbolType(title){
   if(title.includes('MBBR')) return 'mbbr';
   if(title.includes('เติมอากาศ')) return 'aeration';
   if(title.includes('กวาดตะกอน') || title.includes('ตกตะกอน')) return 'clarifier';
-  if(title.includes('กรองทราย')) return 'filter';
-  if(title.includes('กรองขั้นสูง') || title.includes('RO') || title.includes('คาร์บอน')) return 'ro';
+  if(title.includes('กรองทราย') || title.includes('คาร์บอนกรองกลิ่น')) return 'filter';
+  if(title.includes('กรองขั้นสูง') || title.includes('ชุด RO')) return 'ro';
   if(title.includes('ฆ่าเชื้อ') || title.includes('คลอรีน') || title.includes('Chlorine') || title.includes('UV')) return 'disinfect';
   if(title.includes('พัก') || title.includes('Reject')) return 'cylinder';
   if(title.includes('รีดตะกอน')) return 'dewater';
@@ -915,6 +948,18 @@ function renderElectricalBOQ(){
   window.currentElectricalItemizedTotal = motorTotal + instrumentTotal + plcCost + lightingCost;
 }
 
+function categorizeFlowItem(name){
+  if(name.includes('พักตะกอน') || name.includes('รีดตะกอน')) return 'sludge';
+  if(name.includes('ชุด RO')) return 'ro';
+  if(name.includes('ถังพัก Reject')) return 'reject';
+  if(name.includes('สัมผัสคลอรีน') || name.includes('ระบบคลอรีน')) return 'disinfect';
+  return 'main';
+}
+
+function isBioStageItem(name){
+  return name.includes('MBR') || name.includes('MBBR') || name.includes('เติมอากาศ') || name.includes('ตกตะกอน') || name.includes('UASB');
+}
+
 function renderEquipmentFlowDiagram(){
   const rows = document.querySelectorAll('#equipList .equip-row');
   const items = [];
@@ -924,54 +969,180 @@ function renderEquipmentFlowDiagram(){
       const nameEl = row.querySelector('.name');
       let name = nameEl ? nameEl.textContent : '';
       name = name.replace('(Option)','').trim();
-      if(name) items.push({t: name});
+      if(name) items.push({t: name, cat: categorizeFlowItem(name)});
     }
   });
   const el = document.getElementById('flowDiagram');
   if(el) el.innerHTML = buildFlowDiagramSVG(items);
 }
 
+function drawValveConnector(x1, y1, x2, y2, color, dashed){
+  const mx = (x1+x2)/2, my = (y1+y2)/2;
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.sqrt(dx*dx+dy*dy) || 1;
+  const ux = dx/len, uy = dy/len;
+  const px = -uy, py = ux;
+  const baseX = x2 - ux*8, baseY = y2 - uy*8;
+  let s = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1.3"${dashed ? ' stroke-dasharray="4,3"' : ''}/>`;
+  s += `<circle cx="${mx}" cy="${my}" r="4" fill="#FFFFFF" stroke="${color}" stroke-width="1"/>`;
+  s += `<line x1="${mx-3.2}" y1="${my-3.2}" x2="${mx+3.2}" y2="${my+3.2}" stroke="${color}" stroke-width="0.8"/>`;
+  s += `<line x1="${mx-3.2}" y1="${my+3.2}" x2="${mx+3.2}" y2="${my-3.2}" stroke="${color}" stroke-width="0.8"/>`;
+  s += `<polygon points="${baseX+px*4},${baseY+py*4} ${baseX-px*4},${baseY-py*4} ${x2},${y2}" fill="${color}"/>`;
+  return s;
+}
+
+function drawTerminalBox(x, y, w, h, color, iconType, lines){
+  let s = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="none" stroke="${color}" stroke-width="1.5"/>`;
+  const iconCx = x+24, iconCy = y+h/2;
+  s += `<circle cx="${iconCx}" cy="${iconCy}" r="13" fill="none" stroke="${color}" stroke-width="1.3"/>`;
+  if(iconType === 'check'){
+    s += `<path d="M${iconCx-6} ${iconCy} l4 5 l8 -10" stroke="${color}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  } else {
+    s += `<line x1="${iconCx-6.5}" y1="${iconCy-6.5}" x2="${iconCx+6.5}" y2="${iconCy+6.5}" stroke="${color}" stroke-width="2"/>`;
+    s += `<line x1="${iconCx-6.5}" y1="${iconCy+6.5}" x2="${iconCx+6.5}" y2="${iconCy-6.5}" stroke="${color}" stroke-width="2"/>`;
+  }
+  const lineHeight = 12;
+  const startY = iconCy - ((lines.length-1)*lineHeight)/2 + 4;
+  lines.forEach((line, li)=>{
+    s += `<text x="${x+46}" y="${startY+li*lineHeight}" font-size="10.5" fill="${color}" font-weight="600">${escapeXml(line)}</text>`;
+  });
+  return s;
+}
+
 function buildFlowDiagramSVG(trainArr){
   if(!trainArr || trainArr.length === 0) return '';
-  const boxW = 320, boxH = 66, gapY = 30, padX = 20, padTop = 16;
-  const iconSize = 46, iconPad = 10;
-  const totalW = boxW + padX*2;
-  const totalH = padTop*2 + trainArr.length*boxH + (trainArr.length-1)*gapY + 30;
+  const boxW = 280, boxH = 58, gapY = 24, padX = 20, padTop = 16;
+  const iconSize = 40, iconPad = 10;
+  const sideBoxW = 170, sideBoxH = 46, sideGapY = 18;
+  const splitColGap = 40;
+  const RUST = '#A13D2E', SAGE='#4B6E4E', INK='#1F2C33';
 
-  let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:420px; height:auto; font-family:'IBM Plex Sans Thai',sans-serif; background:#fff;">`;
-  svg += `<rect x="2" y="2" width="${totalW-4}" height="${totalH-4}" fill="none" stroke="#1F2C33" stroke-width="1"/>`;
+  const sludgeItems = trainArr.filter(i=>i.cat==='sludge');
+  const roItem = trainArr.find(i=>i.cat==='ro');
+  const rejectItem = trainArr.find(i=>i.cat==='reject');
+  const disinfectItem = trainArr.find(i=>i.cat==='disinfect');
+  const hasSplit = !!roItem;
 
-  trainArr.forEach((s,i)=>{
-    const y = padTop + i*(boxH+gapY);
-    const x = padX;
-    const cy = y + boxH/2;
-    const symType = getEquipSymbolType(s.t);
+  // Main column: everything except sludge/ro/reject; disinfection joins main column only when there's no RO split
+  let mainItems = trainArr.filter(i=>i.cat==='main');
+  if(!hasSplit && disinfectItem) mainItems = mainItems.concat([disinfectItem]);
 
-    svg += `<rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" fill="none" stroke="#1F2C33" stroke-width="1" stroke-dasharray="2,2"/>`;
-    svg += drawEquipIcon(symType, x+iconPad, y+(boxH-iconSize)/2, iconSize, iconSize);
+  let sludgeBranchIndex = -1;
+  mainItems.forEach((it,idx)=>{ if(isBioStageItem(it.t)) sludgeBranchIndex = idx; });
+  if(sludgeBranchIndex === -1) sludgeBranchIndex = mainItems.length - 1;
 
-    const lines = wrapText(s.t, 24, 2);
-    const lineHeight = 14;
+  const mainCx = padX + boxW/2;
+  const mainBottomY = padTop + mainItems.length*boxH + Math.max(mainItems.length-1,0)*gapY;
+
+  // Sludge side-branch geometry
+  const sludgeX = padX + boxW + 50;
+  const sludgeAnchorY = padTop + sludgeBranchIndex*(boxH+gapY) + boxH/2;
+  const sludgeTotalH = sludgeItems.length*sideBoxH + Math.max(sludgeItems.length-1,0)*sideGapY;
+  const sludgeTopY = sludgeAnchorY - sludgeTotalH/2;
+
+  // Parallel split geometry (RO left / Disinfection right), only when RO present
+  let splitTopY=0, roX=padX, disX=0, subW=0, reuseY=0, rejectY=0, finalY=0, finalX=0, finalW=0;
+  if(hasSplit){
+    splitTopY = mainBottomY + gapY + 20;
+    disX = padX + boxW + splitColGap;
+    subW = (boxW-20)/2;
+    reuseY = splitTopY + boxH + gapY;
+    rejectY = reuseY;
+    const rejectBottom = rejectItem ? (rejectY + sideBoxH) : (splitTopY + boxH);
+    const disinfectBottom = disinfectItem ? (splitTopY + boxH) : 0;
+    finalY = Math.max(rejectBottom, disinfectBottom) + gapY;
+    finalX = padX;
+    finalW = disinfectItem ? (disX + boxW - padX) : boxW;
+  }
+
+  const totalW = Math.max(
+    hasSplit ? (finalX + finalW + 20) : (sludgeItems.length>0 ? sludgeX+sideBoxW+20 : boxW+padX*2),
+    sludgeItems.length>0 ? sludgeX+sideBoxW+20 : 0
+  );
+  const totalH = Math.max(
+    hasSplit ? finalY + sideBoxH + 30 : mainBottomY + 30,
+    sludgeTopY + sludgeTotalH + 20
+  );
+
+  let svg = `<svg viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:560px; height:auto; font-family:'IBM Plex Sans Thai',sans-serif; background:#fff;">`;
+  svg += `<rect x="2" y="2" width="${totalW-4}" height="${totalH-4}" fill="none" stroke="${INK}" stroke-width="1"/>`;
+
+  function drawBox(x, y, w, h, name, color, iconSz){
+    const symType = getEquipSymbolType(name);
+    let s = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${color}" stroke-width="1" stroke-dasharray="2,2"/>`;
+    s += drawEquipIcon(symType, x+iconPad, y+(h-iconSz)/2, iconSz, iconSz);
+    const lines = wrapText(name, w>250?24:18, 2);
+    const lineHeight = 12;
+    const cy = y+h/2;
     const startY = cy - ((lines.length-1)*lineHeight)/2 + 4;
     lines.forEach((line, li)=>{
-      svg += `<text x="${x+iconPad+iconSize+12}" y="${startY+li*lineHeight}" font-size="12" fill="#1F2C33">${escapeXml(line)}</text>`;
+      s += `<text x="${x+iconPad+iconSz+10}" y="${startY+li*lineHeight}" font-size="${w>250?11.5:10}" fill="${INK}">${escapeXml(line)}</text>`;
     });
-    svg += `<text x="${x+6}" y="${y-4}" font-size="9" fill="#5B6B72" font-family="'IBM Plex Mono',monospace">${String(i+1).padStart(2,'0')}</text>`;
+    return s;
+  }
 
-    if(i < trainArr.length-1){
-      const ax = x + boxW/2;
-      const ay1 = y + boxH;
-      const ay2 = y + boxH + gapY;
-      const amid = (ay1+ay2)/2;
-      svg += `<line x1="${ax}" y1="${ay1}" x2="${ax}" y2="${ay2-6}" stroke="#1F2C33" stroke-width="1.3"/>`;
-      svg += `<circle cx="${ax}" cy="${amid}" r="4" fill="#FFFFFF" stroke="#1F2C33" stroke-width="1"/>`;
-      svg += `<line x1="${ax-3.2}" y1="${amid-3.2}" x2="${ax+3.2}" y2="${amid+3.2}" stroke="#1F2C33" stroke-width="0.8"/>`;
-      svg += `<line x1="${ax-3.2}" y1="${amid+3.2}" x2="${ax+3.2}" y2="${amid-3.2}" stroke="#1F2C33" stroke-width="0.8"/>`;
-      svg += `<polygon points="${ax-4},${ay2-6} ${ax+4},${ay2-6} ${ax},${ay2}" fill="#1F2C33"/>`;
+  // Main column
+  mainItems.forEach((s,i)=>{
+    const y = padTop + i*(boxH+gapY);
+    svg += drawBox(padX, y, boxW, boxH, s.t, INK, iconSize);
+    svg += `<text x="${padX+6}" y="${y-4}" font-size="9" fill="#5B6B72" font-family="'IBM Plex Mono',monospace">${String(i+1).padStart(2,'0')}</text>`;
+    if(i < mainItems.length-1){
+      svg += drawValveConnector(mainCx, y+boxH, mainCx, y+boxH+gapY, INK, false);
     }
   });
 
-  const footY = totalH - 12;
+  // Sludge side-branch
+  if(sludgeItems.length>0){
+    const anchorBoxY = padTop + sludgeBranchIndex*(boxH+gapY);
+    svg += drawValveConnector(padX+boxW, anchorBoxY+boxH/2, sludgeX, sludgeTopY+sideBoxH/2, RUST, true);
+    let sy = sludgeTopY;
+    sludgeItems.forEach((s,i)=>{
+      svg += `<rect x="${sludgeX}" y="${sy}" width="${sideBoxW}" height="${sideBoxH}" fill="none" stroke="${RUST}" stroke-width="1" stroke-dasharray="2,2"/>`;
+      svg += drawEquipIcon(getEquipSymbolType(s.t), sludgeX+6, sy+(sideBoxH-30)/2, 30, 30);
+      const lines = wrapText(s.t, 18, 2);
+      const lineHeight = 11;
+      const cy = sy+sideBoxH/2;
+      const startY = cy - ((lines.length-1)*lineHeight)/2 + 4;
+      lines.forEach((line,li)=>{
+        svg += `<text x="${sludgeX+6+30+6}" y="${startY+li*lineHeight}" font-size="9.5" fill="${INK}">${escapeXml(line)}</text>`;
+      });
+      if(i < sludgeItems.length-1){
+        svg += drawValveConnector(sludgeX+sideBoxW/2, sy+sideBoxH, sludgeX+sideBoxW/2, sy+sideBoxH+sideGapY, RUST, false);
+      }
+      sy += sideBoxH+sideGapY;
+    });
+  }
+
+  // Parallel split: RO (left) / Disinfection (right), converging to Final Discharge
+  if(hasSplit){
+    const midY = mainBottomY + gapY/2 + 10;
+    svg += drawValveConnector(mainCx, mainBottomY, mainCx, splitTopY, RUST, false);
+    if(disinfectItem){
+      const disCx = disX + boxW/2;
+      svg += drawValveConnector(mainCx, midY, disCx, midY, RUST, true);
+      svg += drawValveConnector(disCx, midY, disCx, splitTopY, INK, false);
+      svg += drawBox(disX, splitTopY, boxW, boxH, disinfectItem.t, INK, iconSize);
+    }
+
+    svg += drawBox(roX, splitTopY, boxW, boxH, roItem.t, RUST, iconSize);
+    const roCx = roX + boxW/2;
+
+    svg += drawValveConnector(roCx, splitTopY+boxH, roX+subW/2, reuseY, SAGE, false);
+    svg += drawTerminalBox(roX, reuseY, subW, sideBoxH, SAGE, 'check', ['น้ำ Reuse', 'พร้อมใช้งาน']);
+
+    if(rejectItem){
+      const rejX = roX+subW+20;
+      svg += drawValveConnector(roCx, splitTopY+boxH, rejX+subW/2, rejectY, RUST, false);
+      svg += drawBox(rejX, rejectY, subW, sideBoxH, 'น้ำทิ้งเข้มข้น (RO Reject)', RUST, 26);
+      svg += drawValveConnector(rejX+subW/2, rejectY+sideBoxH, finalX+finalW/2, finalY, RUST, false);
+    }
+    if(disinfectItem){
+      svg += drawValveConnector(disX+boxW/2, splitTopY+boxH, finalX+finalW/2, finalY, INK, false);
+    }
+    svg += drawTerminalBox(finalX, finalY, finalW, sideBoxH, INK, 'check', ['น้ำทิ้งสุดท้าย (หลังบำบัด)', 'Final Effluent Discharge']);
+  }
+
+  const footY = totalH - 10;
   svg += `<text x="${padX}" y="${footY}" font-size="9" fill="#5B6B72">แผนภาพแนวคิด (Process Concept Diagram) — ไม่ใช่แบบก่อสร้าง</text>`;
 
   svg += `</svg>`;
@@ -1450,23 +1621,49 @@ function calculate(){
     footprintItems.push({name:'ถังกรองทราย', area: Q/120});
     pipeSegments.push({from:prevStage.name, to:'ถังกรองทราย', area1:prevStage.area, area2:Q/120, Q:Q, pumped:true});
     prevStage = {name:'ถังกรองทราย', area: Q/120};
-    equip.push({name:'ถังกรองทราย/คาร์บอน + ระบบล้างย้อน (Backwash)', price: tierPrice(Q,80000,180000,350000), optional:true, maintRate:0.05, spec:'Filtration rate 120 m³/m²·day, Backwash rate 15-20 m³/m²·hr'});
+    equip.push({name:'ถังกรองทราย (Sand Filter) + ระบบล้างย้อน (Backwash)', price: tierPrice(Q,80000,180000,350000), optional:true, maintRate:0.05, spec:'Filtration rate 120 m³/m²·day, Backwash rate 15-20 m³/m²·hr — กรองอนุภาค/TSS เท่านั้น ไม่ดูดซับสารอินทรีย์ละลายน้ำ/สี/กลิ่น'});
   } else if(strict && usingMBR){
-    badges.push({cls:'sage', txt:'ใช้ MBR อยู่แล้ว — เมมเบรนกรองคุณภาพน้ำออกได้ตามมาตรฐานเข้มงวดโดยไม่ต้องมีถังกรองทรายเพิ่ม'});
+    badges.push({cls:'sage', txt:'ใช้ MBR อยู่แล้ว — เมมเบรนกรองอนุภาค/TSS ได้ตามมาตรฐานเข้มงวดโดยไม่ต้องมีถังกรองทรายเพิ่ม (แต่เมมเบรนไม่ดูดซับสารอินทรีย์ละลายน้ำ/สี/กลิ่น — ดูตัวเลือกถังคาร์บอนด้านล่าง)'});
   }
 
+  // Carbon polishing addresses dissolved organics/color/odor — a different removal mechanism than
+  // TSS filtration (sand filter or MBR membrane), so it's offered whenever strict applies regardless of usingMBR
+  if(strict){
+    const carbonPolishVol = Q*(20/60)/24; // EBCT 20 min
+    const carbonPolishArea = carbonPolishVol/2.5;
+    train.push({t:'ถังคาร์บอนกรองกลิ่น/สี ก่อนปล่อยทิ้ง (Activated Carbon Polishing)', d:'ดูดซับสารอินทรีย์ละลายน้ำ/สี/กลิ่น/คลอรีนตกค้าง ที่ทั้งสารกรองทรายและเมมเบรน MBR กรองไม่ได้ (เพราะเป็นการกรองด้วยขนาดอนุภาค ไม่ใช่การดูดซับ) — ใช้เมื่อมาตรฐานปล่อยทิ้งเข้มงวดเรื่องสี/กลิ่น/สารอินทรีย์ตกค้าง หรือมีข้อกำหนดต้อง Dechlorination ก่อนปล่อยลงแหล่งน้ำ'});
+    civilItems.push({name:'งานโยธาถังคาร์บอนกรองกลิ่น/สี (ก่อนปล่อยทิ้ง)', price: Math.round(carbonPolishVol*8000)});
+    footprintItems.push({name:'ถังคาร์บอนกรองกลิ่น/สี (ก่อนปล่อยทิ้ง)', area: carbonPolishArea});
+    pipeSegments.push({from:prevStage.name, to:'ถังคาร์บอนกรองกลิ่น/สี (ก่อนปล่อยทิ้ง)', area1:prevStage.area, area2:carbonPolishArea, Q:Q, pumped:false});
+    prevStage = {name:'ถังคาร์บอนกรองกลิ่น/สี (ก่อนปล่อยทิ้ง)', area: carbonPolishArea};
+    equip.push({
+      name: 'ถังคาร์บอนกรองกลิ่น/สี ก่อนปล่อยทิ้ง (Activated Carbon Polishing)',
+      price: tierPrice(Q,100000,250000,600000),
+      optional: true,
+      maintRate: 0.09,
+      defaultChecked: reuse,
+      spec: 'Empty Bed Contact Time (EBCT) 20 นาที, เปลี่ยน/สลับคาร์บอนทุก 6-12 เดือน (ขึ้นกับปริมาณสารอินทรีย์จริง)' + (reuse ? ' — เปิดไว้ให้อัตโนมัติเพราะมีสาย RO (ป้องกันเมมเบรนจากคลอรีน/สารอินทรีย์ตกค้าง) ปิดได้ถ้าไม่ต้องการ' : ' — ปิดไว้ให้อัตโนมัติ เปิดใช้ถ้ามาตรฐานปล่อยทิ้งกำหนดเรื่องสี/กลิ่น/สารอินทรีย์ตกค้าง/Dechlorination')
+    });
+    badges.push({cls:'sage', txt: reuse
+      ? 'เปิดถังคาร์บอนกรองกลิ่น/สีก่อนปล่อยทิ้งให้อัตโนมัติ — เพราะมีสาย RO อยู่ ถังนี้ช่วยป้องกันเมมเบรน RO จากคลอรีน/สารอินทรีย์ตกค้างไปพร้อมกับขัดคุณภาพน้ำทิ้ง (ปิดได้จากตารางอุปกรณ์ข้อ 07 ถ้าไม่ต้องการ)'
+      : 'เพิ่มตัวเลือกถังคาร์บอนกรองกลิ่น/สีก่อนปล่อยทิ้งแล้ว (ปิดไว้ให้ค่าเริ่มต้น) — ใช้ได้ไม่ว่าจะเลือก MBR หรือไม่ เพราะดูดซับสารอินทรีย์ละลายน้ำที่การกรองด้วยขนาดอนุภาคทำไม่ได้ ถ้ามาตรฐานปล่อยทิ้งกำหนดเรื่องนี้ ให้เปิดใช้ในตารางอุปกรณ์ข้อ 07'});
+  }
+
+  window.currentROMembraneAnnual = 0;
+  let Q_toRO = 0;
   if(reuse){
-    badges.push({cls:'rust', txt:'เกรดนำน้ำกลับมาใช้ใหม่ — ควรพิจารณาระบบกรองละเอียดเพิ่มเติมตามวัตถุประสงค์การใช้น้ำ เลือกได้ตามความเข้มงวดที่ต้องการ (คาร์บอน/RO/ทั้งคู่)'});
+    badges.push({cls:'rust', txt:'เกรดนำน้ำกลับมาใช้ใหม่ — คุณภาพน้ำก่อนถึงจุดนี้ผ่านถังคาร์บอนกรองกลิ่น/สีมาแล้ว (ถ้าเปิดใช้) เลือกความเข้มงวดเพิ่มเติมด้วย RO ตามวัตถุประสงค์การใช้น้ำ'});
     train.push({t:'ระบบกรองขั้นสูงเพื่อนำน้ำกลับมาใช้ใหม่', d:'ขัดคุณภาพน้ำจาก MBR ให้ปลอดภัยตามวัตถุประสงค์การนำกลับมาใช้ (รดน้ำต้นไม้/ล้างพื้น/หม้อไอน้ำ/กระบวนการผลิต) — ระดับความเข้มงวดขึ้นกับการใช้งานปลายทางจริง ควรปรึกษาผู้เชี่ยวชาญเฉพาะทาง'});
 
     const roPercent = parseFloat(document.getElementById('roPercent').value) || 50;
     const rejectPercent = parseFloat(document.getElementById('rejectPercent').value) || 40;
-    const Q_toRO = Q * (roPercent/100);
+    Q_toRO = Q * (roPercent/100);
     const Q_reject = Q_toRO * (rejectPercent/100);
 
-    equip.push({name:'ถังคาร์บอนกรองกลิ่น/สี (Activated Carbon Filter) — สำหรับ reuse ทั่วไป เช่น รดน้ำต้นไม้/ล้างพื้น', price: tierPrice(Math.max(Q_toRO,1),100000,250000,600000), optional:true, maintRate:0.08, spec:`Empty Bed Contact Time (EBCT) 15-20 นาที, รองรับ ${fmt(Q_toRO)} m³/day`});
-    equip.push({name:`ชุด RO (Reverse Osmosis) — ขนาดตามน้ำที่ส่งเข้า RO จริง ${fmt(roPercent,0)}% ของ Q (${fmt(Q_toRO)} m³/day) — สำหรับ reuse ที่ต้องการความบริสุทธิ์สูง เช่น น้ำป้อนหม้อไอน้ำ/กระบวนการผลิต`, price: tierPrice(Math.max(Q_toRO,1),300000,800000,2000000), optional:true, maintRate:0.10, spec:`Recovery ~${fmt(100-rejectPercent,0)}%, TDS Rejection &gt;95%, เมมเบรน Brackish Water RO (BWRO), รองรับ ${fmt(Q_toRO)} m³/day`});
-    pipeSegments.push({from:prevStage.name+' (แยกสาย Reuse)', to:'ระบบ Carbon/RO', area1:prevStage.area, area2:Math.max(Q_toRO/50,6), Q:Q_toRO, pumped:true, branch:true});
+    const roSystemPrice = tierPrice(Math.max(Q_toRO,1),300000,800000,2000000);
+    equip.push({name:`ชุด RO (Reverse Osmosis) — ขนาดตามน้ำที่ส่งเข้า RO จริง ${fmt(roPercent,0)}% ของ Q (${fmt(Q_toRO)} m³/day) — สำหรับ reuse ที่ต้องการความบริสุทธิ์สูง เช่น น้ำป้อนหม้อไอน้ำ/กระบวนการผลิต`, price: roSystemPrice, optional:true, maintRate:0.10, spec:`Recovery ~${fmt(100-rejectPercent,0)}%, TDS Rejection &gt;95%, เมมเบรน Brackish Water RO (BWRO), รองรับ ${fmt(Q_toRO)} m³/day`});
+    window.currentROMembraneAnnual = Math.round((roSystemPrice * 0.20) / 4);
+    pipeSegments.push({from:prevStage.name+' (แยกสาย Reuse)', to:'ชุด RO', area1:prevStage.area, area2:Math.max(Q_toRO/50,6), Q:Q_toRO, pumped:true, branch:true});
 
     train.push({t:'จัดการน้ำ Reject จากระบบ RO', d:`น้ำบำบัดแล้ว ${fmt(roPercent,0)}% (${fmt(Q_toRO)} m³/day) ถูกส่งเข้า RO — ในจำนวนนี้ ${fmt(rejectPercent,0)}% (${fmt(Q_reject)} m³/day) จะออกมาเป็น Reject ที่มีความเค็ม/TDS เข้มข้นสูง ไม่ควรวนกลับเข้าระบบชีวภาพ ต้องจัดการแยกต่างหาก (ปล่อยท่อรวมถ้าเกลือไม่เกินมาตรฐาน / ส่งกำจัดภายนอก / ระบบ Zero Liquid Discharge)`});
     badges.push({cls:'rust', txt:`RO จะสร้างน้ำ Reject ประมาณ ${fmt(Q_reject)} m³/day (ความเค็มสูง) — ต้องวางแผนกำจัดแยกต่างหาก ไม่สามารถวนกลับเข้าระบบชีวภาพได้`});
@@ -1514,17 +1711,18 @@ function calculate(){
   }
 
   train.push({t:'ระบบฆ่าเชื้อ (Disinfection)', d: wwType==='hospital' ? 'จำเป็นอย่างยิ่งสำหรับน้ำเสียโรงพยาบาล เพื่อกำจัดเชื้อโรค' : 'ฆ่าเชื้อก่อนปล่อยทิ้งตามมาตรฐาน'});
-  const disinfectArea = (Q*(0.5/24))/2;
+  const Q_toDisinfection = Math.max(Q - Q_toRO, 0); // excludes portion diverted to RO before this point — chlorine damages RO membranes, so that split happens upstream of disinfection
+  const disinfectArea = (Q_toDisinfection*(0.5/24))/2;
   footprintItems.push({name:'ถังสัมผัสคลอรีน (Disinfection, HRT 30 นาที)', area: disinfectArea});
   footprintItems.push({name:'จุดตะแกรงดักขยะ + ทางเดินเข้าถึง (โดยประมาณ)', area: 6});
-  pipeSegments.push({from:prevStage.name, to:'ถังสัมผัสคลอรีน (Disinfection)', area1:prevStage.area, area2:disinfectArea, Q:Q, pumped: !!prevStage.pumpOut});
-  pipeSegments.push({from:'ถังสัมผัสคลอรีน (Disinfection)', to:'จุดปล่อยทิ้ง (Discharge Point)', area1:disinfectArea, area2:disinfectArea, Q:Q, pumped:false, fixedLength:15});
+  pipeSegments.push({from:prevStage.name, to:'ถังสัมผัสคลอรีน (Disinfection)', area1:prevStage.area, area2:disinfectArea, Q:Q_toDisinfection, pumped: !!prevStage.pumpOut});
+  pipeSegments.push({from:'ถังสัมผัสคลอรีน (Disinfection)', to:'จุดปล่อยทิ้ง (Discharge Point)', area1:disinfectArea, area2:disinfectArea, Q:Q_toDisinfection, pumped:false, fixedLength:15});
   equip.push({
     name: wwType==='hospital' ? 'ระบบคลอรีน + ถังสัมผัสคลอรีน (Chlorine Contact Tank) หรือ UV' : 'ถังสัมผัสคลอรีน (Chlorine Contact Tank)',
-    price: wwType==='hospital' ? tierPrice(Q,150000,350000,700000) : tierPrice(Q,40000,100000,250000),
+    price: wwType==='hospital' ? tierPrice(Q_toDisinfection,150000,350000,700000) : tierPrice(Q_toDisinfection,40000,100000,250000),
     optional:false,
     maintRate:0.05,
-    spec: wwType==='hospital' ? 'HRT สัมผัส 30 นาที, โดสคลอรีน ~5 mg/L หรือ UV dose 30-40 mJ/cm²' : 'HRT สัมผัส 30 นาที, โดสคลอรีน ~5 mg/L'
+    spec: (wwType==='hospital' ? 'HRT สัมผัส 30 นาที, โดสคลอรีน ~5 mg/L หรือ UV dose 30-40 mJ/cm²' : 'HRT สัมผัส 30 นาที, โดสคลอรีน ~5 mg/L') + (Q_toRO>0 ? ` — ขนาดตามน้ำที่ไม่ได้แยกไป RO (${fmt(Q_toDisinfection)} m³/day)` : '')
   });
 
   if(wwType==='hospital'){
@@ -1651,14 +1849,15 @@ function calculate(){
   let polymerAnnual = 0;
   polymerAnnual = (sludgeKgDay/1000) * 5 * 365 * 150; // 5 kg polymer/tonne dry solids, 150 THB/kg
 
-  const chlorineDoseKgDay = Q * 5/1000; // 5 mg/L dose assumption
+  const chlorineDoseKgDay = Q_toDisinfection * 5/1000; // 5 mg/L dose assumption — excludes portion diverted to RO before the chlorine tank
   const chlorineAnnual = chlorineDoseKgDay * 365 * 25; // 25 THB/kg
 
   const chemicalsAnnual = coagulantAnnual + polymerAnnual + chlorineAnnual;
   const laborAnnual = tierPrice(Q, 60000, 240000, 720000);
+  const roMembraneAnnual = window.currentROMembraneAnnual || 0;
 
-  window.currentOpexFixed = electricityAnnual + chemicalsAnnual + laborAnnual;
-  window.opexBreakdown = {electricityAnnual, coagulantAnnual, polymerAnnual, chlorineAnnual, chemicalsAnnual, laborAnnual, energyIntensity};
+  window.currentOpexFixed = electricityAnnual + chemicalsAnnual + laborAnnual + roMembraneAnnual;
+  window.opexBreakdown = {electricityAnnual, coagulantAnnual, polymerAnnual, chlorineAnnual, chemicalsAnnual, laborAnnual, roMembraneAnnual, energyIntensity};
 
   // Advanced: Oxygen requirement & Blower sizing
   const oxygenSection = document.getElementById('oxygenSection');
@@ -1825,6 +2024,7 @@ function calculate(){
   ];
   if(opex.coagulantAnnual > 0) opexRows.push(['สารเคมี — สารตกตะกอน (PAC)', fmtTHB(opex.coagulantAnnual), '80 mg/L']);
   if(opex.polymerAnnual > 0) opexRows.push(['สารเคมี — โพลิเมอร์ (รีดตะกอน)', fmtTHB(opex.polymerAnnual), '5 kg/tonne dry solids']);
+  if(opex.roMembraneAnnual > 0) opexRows.push(['เปลี่ยนไส้กรอง/เมมเบรน RO (เฉลี่ยรายปี)', fmtTHB(opex.roMembraneAnnual), '20% ของราคาชุด RO ÷ รอบเปลี่ยน 4 ปี']);
   opexRows.push(['สารเคมี — คลอรีนฆ่าเชื้อ', fmtTHB(opex.chlorineAnnual), '5 mg/L']);
   opexRows.push(['ค่าแรงงานควบคุมระบบ', fmtTHB(opex.laborAnnual), 'ตามขนาดโปรเจค']);
   opexRows.push(['ค่าบำรุงรักษาเครื่องจักร/งานโยธา', 'ดูข้อ 07', 'ปรับตามรายการที่ติ๊กเลือก']);
@@ -1832,7 +2032,7 @@ function calculate(){
   document.getElementById('opexTable').querySelector('tbody').innerHTML = opexRows.map(r=>`
     <tr><td class="label">${r[0]}</td><td>${r[1]}</td><td class="label">${r[2]}</td></tr>
   `).join('');
-  document.getElementById('opexNote').innerHTML = `สมมติฐาน: ค่าไฟ ${ELEC_RATE} บาท/kWh (อัตราอุตสาหกรรมทั่วไป), PAC 15 บาท/kg, โพลิเมอร์ 150 บาท/kg, คลอรีน 25 บาท/kg — ทั้งหมดเป็นค่าเฉลี่ยตลาด ไม่ได้ผูกกับซัพพลายเออร์รายใดรายหนึ่ง`;
+  document.getElementById('opexNote').innerHTML = `สมมติฐาน: ค่าไฟ ${ELEC_RATE} บาท/kWh (อัตราอุตสาหกรรมทั่วไป), PAC 15 บาท/kg, โพลิเมอร์ 150 บาท/kg, คลอรีน 25 บาท/kg — ทั้งหมดเป็นค่าเฉลี่ยตลาด ไม่ได้ผูกกับซัพพลายเออร์รายใดรายหนึ่ง${opex.roMembraneAnnual > 0 ? '<br><br><strong>เมมเบรน RO:</strong> สมมติว่าไส้กรอง/เมมเบรนคิดเป็น ~20% ของราคาชุด RO ทั้งชุด และต้องเปลี่ยนทุก 4 ปี (ทั่วไป 3-5 ปีสำหรับ RO ที่ใช้กับน้ำเสียบำบัดแล้ว ซึ่งเสี่ยง fouling มากกว่าน้ำสะอาด) แสดงเป็นค่าเฉลี่ยรายปีเพื่อให้เห็นภาพ OPEX ต่อเนื่อง — ในทางปฏิบัติจะจ่ายเป็นก้อนใหญ่ทุก 3-5 ปี ไม่ใช่จ่ายสม่ำเสมอทุกปี ควรเผื่อกระแสเงินสดสำหรับปีที่ต้องเปลี่ยนจริงด้วย' : ''}`;
 
   updateTotal();
 
