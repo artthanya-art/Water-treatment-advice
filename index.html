@@ -411,29 +411,68 @@
       <div class="panel-title" style="margin-top:16px;">เครื่องจักร/อุปกรณ์ไฟฟ้า — ยกเลิกรายการที่เป็น Option ได้</div>
       <div id="equipList"></div>
 
+      <div class="panel-title" style="margin-top:16px;">รายละเอียดงานท่อและวาล์ว (Detailed Piping &amp; Valves BOQ)</div>
+      <table class="spec" id="pipingBOQTable" style="font-size:11.5px;">
+        <thead><tr><th>จุดต่อ</th><th>Q (m³/day)</th><th>ขนาดท่อ (mm)</th><th>ยาว (m)</th><th>วาล์ว</th><th>รวม (บาท)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="row2" style="margin-top:10px;">
+        <div class="field">
+          <label>ค่าเผื่อ Fitting/ท่อจิ๊บย่อยที่ไม่ได้ระบุ (%)</label>
+          <input type="number" id="pipingMiscPercent" value="20" min="0" max="100" step="1" oninput="updateTotal()">
+        </div>
+      </div>
       <div class="equip-row" style="border-top:1px solid var(--line); margin-top:6px; padding-top:10px;">
         <div class="left">
-          <span class="name">ค่าท่อ+ติดตั้ง (Piping &amp; Installation) — % ของราคาอุปกรณ์เครื่องจักรที่เลือก
-            <input type="number" id="pipingPercent" value="20" min="0" max="100" class="price-edit" style="width:60px; margin-left:6px;" oninput="updateTotal()">%
-          </span>
+          <span class="name">รวมค่าท่อ+วาล์ว+ติดตั้ง (Piping &amp; Installation)</span>
         </div>
         <div style="text-align:right; flex-shrink:0;">
           <div class="price" id="pipingCostDisplay">฿0</div>
           <div class="price maint-display" id="pipingMaintDisplay" style="color:var(--ink-soft); font-size:11px; margin-top:2px;">~฿0/ปี (2%)</div>
         </div>
       </div>
+      <div class="note" style="margin-top:10px;">ขนาดท่อคำนวณจากสมการความต่อเนื่อง D = √(4Q/(π×v)) แล้วปัดขึ้นเป็นขนาดมาตรฐาน — ใช้ความเร็วออกแบบ 1.0 m/s สำหรับท่อไหลอิสระ (gravity) และ 1.8 m/s สำหรับท่อที่มีปั๊ม (pumped) ตามแนวทางทั่วไปของ WWTP ความยาวท่อประมาณจากขนาดถัง/หน่วยที่เชื่อมกัน (√พื้นที่ฐานเฉลี่ย + ระยะเผื่อ 2m) เนื่องจากยังไม่มีผังไซต์จริง วาล์วคิด 2 ตัว (isolation) ทุกจุดต่อ + เพิ่ม check valve 1 ตัวถ้าเป็นท่อปั๊ม ราคาต่อหน่วยของทั้งท่อและวาล์วปรับตามขนาดเส้นผ่านศูนย์กลาง<br><br>รายการนี้ครอบคลุมเฉพาะสายท่อหลัก (main process line, RAS, WAS, สายตะกอน, สาย RO) ส่วนท่อจิ๊บย่อย ระบายอากาศ ท่อระบายฉุกเฉิน และ fitting ปลีกย่อยอื่นๆ ที่ไม่ได้จำลองแยก ให้บวกเพิ่มด้วย % เผื่อด้านบน<br><br>นี่ยังเป็นการประมาณระดับแนวคิด ไม่ใช่ผังท่อ (piping isometric) จริง ควรให้วิศวกรจัดทำแบบท่อละเอียดจากผังไซต์จริงก่อนใช้ประมูลงาน</div>
 
-      <div class="equip-row">
+      <div class="panel-title" style="margin-top:16px;">รายละเอียดงานไฟฟ้า/ควบคุม (Detailed Electrical &amp; Instrumentation BOQ)</div>
+      <div class="field">
+        <label>ระดับการควบคุม (Automation Level)</label>
+        <select id="automationLevel" onchange="updateTotal()">
+          <option value="basic">พื้นฐาน (Timer/Float Switch) — เหมาะกับ Q &lt; 100 m³/day</option>
+          <option value="plc_basic">PLC พื้นฐาน + HMI ในพื้นที่ — เหมาะกับ Q 100-1,000 m³/day</option>
+          <option value="full_scada">PLC + SCADA เต็มรูปแบบ — เหมาะกับ Q &gt; 1,000 m³/day หรือไม่มีคนเฝ้า/ต้องรายงานหน่วยงานกำกับดูแล</option>
+        </select>
+        <div class="field-note">ระบบเลือกให้อัตโนมัติตามขนาด Q ที่กรอกไว้ แต่เปลี่ยนเองได้ถ้าสถานการณ์จริงต่างจากค่าเริ่มต้น (เช่น ไม่มีคนเฝ้า/ต้องรายงานหน่วยงานกำกับดูแล ควรเลือก SCADA แม้ระบบเล็ก)</div>
+      </div>
+      <table class="spec" id="motorBOQTable" style="font-size:11.5px;">
+        <thead><tr><th>อุปกรณ์</th><th>kW โดยประมาณ</th><th>สายไฟ+ท่อร้อยสาย</th><th>ชุด Starter/VFD</th><th>รวม (บาท)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <table class="spec" id="instrumentBOQTable" style="font-size:11.5px; margin-top:10px;">
+        <thead><tr><th>เครื่องมือวัด/ควบคุม</th><th>จำนวน</th><th>ราคาต่อชุด</th><th>รวม (บาท)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <table class="spec" id="electricalMiscTable" style="font-size:11.5px; margin-top:10px;"><tbody></tbody></table>
+      <div class="row2" style="margin-top:10px;">
+        <div class="field">
+          <label>ค่าเผื่อ Earthing/Lightning Protection/สายเสริม (%)</label>
+          <input type="number" id="electricalMiscPercent" value="15" min="0" max="100" step="1" oninput="updateTotal()">
+        </div>
+      </div>
+      <div class="equip-row" style="border-top:1px solid var(--line); margin-top:6px; padding-top:10px;">
         <div class="left">
-          <span class="name">ค่าไฟฟ้า/ควบคุม (Electrical &amp; Instrumentation) — % ของราคาอุปกรณ์เครื่องจักรที่เลือก
-            <input type="number" id="electricalPercent" value="18" min="0" max="100" class="price-edit" style="width:60px; margin-left:6px;" oninput="updateTotal()">%
-          </span>
+          <span class="name">รวมค่าไฟฟ้า/ควบคุม (Electrical &amp; Instrumentation)</span>
         </div>
         <div style="text-align:right; flex-shrink:0;">
           <div class="price" id="electricalCostDisplay">฿0</div>
           <div class="price maint-display" id="electricalMaintDisplay" style="color:var(--ink-soft); font-size:11px; margin-top:2px;">~฿0/ปี (4%)</div>
         </div>
       </div>
+      <div class="note" style="margin-top:10px;">กำลังไฟฟ้าต่อเครื่อง (kW) ประมาณจากภาระไฟฟ้ารวมที่ติดตั้ง = ค่าไฟเฉลี่ยต่อปี (จากหมวด OPEX) ÷ 8,760 ชม. × Diversity Factor 1.8 (เผื่อ peak/มอเตอร์สำรอง) แล้วกระจายตามสัดส่วนราคาแต่ละเครื่อง (เครื่องแพงกว่า = กำลังไฟฟ้าสูงกว่าโดยประมาณ) จากนั้นคำนวณกระแส I = P/(√3×380V×0.85×0.9) เพื่อเลือกขนาดสาย+ราคาสายไฟที่สเกลตามกระแส และราคาตู้ Starter/VFD สเกลตาม kW<br><br>ระยะสายไฟประมาณจากขนาดพื้นที่ไซต์รวม (หมวด 06) หารด้วยจำนวนเครื่องจักร บวกระยะเผื่อ เนื่องจากยังไม่รู้ตำแหน่งตู้ MCC จริง<br><br><strong>ระดับการควบคุม 3 แบบ</strong> — ระบบเลือกให้อัตโนมัติตาม Q แต่เปลี่ยนเองได้ (เช่น ระบบเล็กแต่ต้องรายงานหน่วยงานกำกับดูแล ควรเลือก SCADA):
+        <ul style="margin:6px 0 0 18px; padding:0;">
+          <li><strong>พื้นฐาน</strong> (Q&lt;100): Float Switch กลไกล้วน + ตู้ Timer/Relay ไม่มี PLC — เหมาะระบบเล็กมีคนดูแลเป็นระยะ</li>
+          <li><strong>PLC พื้นฐาน</strong> (Q 100-1,000): Flow Meter + Level Sensor + PLC/HMI ในพื้นที่ ไม่มี pH/DO/Chlorine online และไม่มีเฝ้าระยะไกล</li>
+          <li><strong>PLC+SCADA เต็มรูปแบบ</strong> (Q&gt;1,000): ครบทุกเครื่องมือวัด + เฝ้าระยะไกล/บันทึกข้อมูล เหมาะกับระบบไม่มีคนเฝ้าตลอดหรือต้องรายงานผลออนไลน์</li>
+        </ul><br>ค่าไฟส่องสว่าง/ปลั๊กทั่วไป คิดจากพื้นที่ไซต์รวมที่ประมาณไว้ในหมวด 06 (คงที่ทุกระดับการควบคุม)<br><br>นี่เป็นการประมาณระดับแนวคิดจากภาระไฟฟ้ารวม ไม่ใช่ Single Line Diagram จริง ควรให้วิศวกรไฟฟ้าออกแบบระบบจริงจาก load schedule ของอุปกรณ์แต่ละตัวก่อนใช้ประมูลงาน</div>
 
       <div class="panel-title" style="margin-top:16px;">ต้นทุนระดับโปรเจค (Project-level Costs) — คิดต่อเนื่องจากยอดข้างบน</div>
       <table class="spec" id="projectCostTable">
@@ -470,8 +509,9 @@
         <span class="lbl" style="font-size:13px; color:var(--ink-soft);">ค่าบำรุงรักษาโดยประมาณต่อปี</span>
         <span class="val mono" id="totalMaint" style="font-size:16px; color:var(--steel-deep);">฿0/ปี</span>
       </div>
+      <button class="btn-secondary" onclick="exportBOQCSV()">ดาวน์โหลดตาราง BOQ ทั้งโปรเจค (CSV/Excel)</button>
       <div class="note" style="margin-top:10px; background:var(--sage-bg); border-left-color:var(--sage);"><strong>แก้ไขราคาได้:</strong> คลิกที่ตัวเลขราคาในตารางงานโยธาหรือรายการอุปกรณ์ด้านบนเพื่อแก้ไขเป็นราคาจริงที่คุณมี (เช่น ใบเสนอราคาจากซัพพลายเออร์) ระบบจะคำนวณค่าบำรุงรักษา, OPEX และยอดรวมทั้งหมดใหม่ให้ทันที — กด "คำนวณ" ใหม่อีกครั้งเพื่อรีเซ็ตกลับเป็นค่าประมาณการเริ่มต้น</div>
-      <div class="note" style="margin-top:10px;">ราคาก่อสร้าง/อุปกรณ์เป็นประมาณการอย่างหยาบจากค่าเฉลี่ยตลาดทั่วไป <strong>ราคาอุปกรณ์ถือว่ารวมค่าขนส่งมาถึงในประเทศแล้ว</strong> (เพราะเป็นราคาตลาดที่ซื้อขายจริงในไทย ไม่ใช่ราคาหน้าโรงงานต่างประเทศ) จึงไม่มีการบวกค่าขนส่งซ้ำอีกชั้น<br><br>ค่าท่อ+ติดตั้ง และ ค่าไฟฟ้า/ควบคุม คิดเป็น % ของราคาอุปกรณ์เครื่องจักรที่เลือกอยู่เท่านั้น (ไม่รวมงานโยธา) — ท่อครอบคลุมวัสดุ+ค่าแรงเชื่อม/ประกอบ/ทดสอบระบบ ส่วนไฟฟ้า/ควบคุมครอบคลุมสายไฟ ตู้ MCC ระบบ PLC/SCADA และเซนเซอร์วัดต่างๆ<br><br>ต้นทุนระดับโปรเจค (ออกแบบ/ใบอนุญาต/VAT/Contingency) คำนวณต่อเนื่องกันตามลำดับ: (งานโยธา+อุปกรณ์+ท่อ+ไฟฟ้า/ควบคุม) → บวกออกแบบ+ใบอนุญาต → บวก VAT → บวก Contingency เป็นขั้นสุดท้าย รายละเอียดสูตรอยู่ในเอกสารอ้างอิงสูตร<br><br>ค่าบำรุงรักษา/ปี คิดเป็น % ของราคาแต่ละรายการ (งานโยธา ~1.5%/ปี, เครื่องจักรทั่วไป ~5-6%/ปี, เมมเบรน MBR ~12%/ปี, เครื่องรีดตะกอน ~7%/ปี, ท่อ+วาล์ว ~2%/ปี, ไฟฟ้า/ควบคุม ~4%/ปี) ครอบคลุมเฉพาะอะไหล่/ซ่อมบำรุงเครื่องจักรเท่านั้น — ค่าไฟ/สารเคมี/แรงงาน ดูเพิ่มเติมด้านล่าง</div>
+      <div class="note" style="margin-top:10px;">ราคาก่อสร้าง/อุปกรณ์เป็นประมาณการอย่างหยาบจากค่าเฉลี่ยตลาดทั่วไป <strong>ราคาอุปกรณ์ถือว่ารวมค่าขนส่งมาถึงในประเทศแล้ว</strong> (เพราะเป็นราคาตลาดที่ซื้อขายจริงในไทย ไม่ใช่ราคาหน้าโรงงานต่างประเทศ) จึงไม่มีการบวกค่าขนส่งซ้ำอีกชั้น<br><br><strong>ค่าท่อ+วาล์ว</strong> คำนวณแบบละเอียดจากขนาดท่อจริง (สูตรความต่อเนื่อง D=√(4Q/πv)) + ความยาวประมาณจากผังไซต์ + จำนวนวาล์วต่อจุดต่อ (ดูรายละเอียดในตาราง Piping BOQ พร้อมหมายเหตุสูตรด้านล่างของตารางนั้น) ไม่ใช่ % คงที่แบบเดิมอีกต่อไป<br><br><strong>ค่าไฟฟ้า/ควบคุม</strong> คำนวณจากภาระไฟฟ้ารวมที่ติดตั้งจริง + จำนวนเครื่องมือวัดตามระดับการควบคุมที่เลือก (พื้นฐาน/PLC พื้นฐาน/SCADA เต็มรูปแบบ) ไม่ใช่ % คงที่เช่นกัน (ดูรายละเอียดในตาราง Electrical BOQ ด้านล่าง)<br><br>ต้นทุนระดับโปรเจค (ออกแบบ/ใบอนุญาต/VAT/Contingency) คำนวณต่อเนื่องกันตามลำดับ: (งานโยธา+อุปกรณ์+ท่อ+ไฟฟ้า/ควบคุม) → บวกออกแบบ+ใบอนุญาต → บวก VAT → บวก Contingency เป็นขั้นสุดท้าย รายละเอียดสูตรอยู่ในเอกสารอ้างอิงสูตร<br><br>ค่าบำรุงรักษา/ปี คิดเป็น % ของราคาแต่ละรายการ (งานโยธา ~1.5%/ปี, เครื่องจักรทั่วไป ~5-6%/ปี, เมมเบรน MBR ~12%/ปี, เครื่องรีดตะกอน ~7%/ปี, ท่อ+วาล์ว ~2%/ปี, ไฟฟ้า/ควบคุม ~4%/ปี) ครอบคลุมเฉพาะอะไหล่/ซ่อมบำรุงเครื่องจักรเท่านั้น — ค่าไฟ/สารเคมี/แรงงาน ดูเพิ่มเติมด้านล่าง</div>
 
       <div class="panel-title" style="margin-top:16px;">แผนภาพกระบวนการ (Process Flow Diagram)</div>
       <div id="flowDiagram" style="text-align:center;"></div>
@@ -552,6 +592,14 @@
 </div>
 
 <script>
+document.querySelectorAll('table.spec').forEach(t=>{
+  const wrapper = document.createElement('div');
+  wrapper.style.overflowX = 'auto';
+  wrapper.style.webkitOverflowScrolling = 'touch';
+  t.parentNode.insertBefore(wrapper, t);
+  wrapper.appendChild(t);
+});
+
 let wwType = 'domestic';
 
 const wwDefaults = {
@@ -572,6 +620,9 @@ function applyWwDefaults(type){
     if(!userEditedFields[id]) document.getElementById(id).value = d[id];
   });
 }
+
+let automationLevelTouched = false;
+document.getElementById('automationLevel').addEventListener('change', ()=>{ automationLevelTouched = true; });
 
 document.getElementById('wwType').addEventListener('click', (e)=>{
   const chip = e.target.closest('.chip');
@@ -712,6 +763,158 @@ function drawEquipIcon(type, x0, y0, w, h){
   return g;
 }
 
+function pipeDiameterMM(Q_m3day, velocity_ms){
+  const Q_m3s = Q_m3day/86400;
+  const D_m = Math.sqrt(4*Q_m3s/(Math.PI*velocity_ms));
+  const D_mm = D_m*1000;
+  const standardSizes = [50,65,80,100,125,150,200,250,300,350,400,450,500,600,700,800];
+  for(const s of standardSizes){ if(s >= D_mm) return s; }
+  return standardSizes[standardSizes.length-1];
+}
+
+function pipeRatePerM(diameterMM, pumped){
+  const base = pumped ? 700 : 500; // THB/m installed, reference at 100mm
+  return Math.round(base * Math.pow(diameterMM/100, 1.3));
+}
+
+function isolationValveCost(diameterMM){
+  return Math.round(2000 * Math.pow(diameterMM/100, 1.2));
+}
+
+function checkValveCost(diameterMM){
+  return Math.round(4000 * Math.pow(diameterMM/100, 1.2));
+}
+
+function estimateSegmentLength(area1, area2, fixedLength){
+  if(fixedLength) return fixedLength;
+  const clearance = 2;
+  const len = (Math.sqrt(Math.max(area1,1)) + Math.sqrt(Math.max(area2,1)))/2 + clearance;
+  return Math.max(len, 3);
+}
+
+function renderPipingBOQ(segments){
+  const V_GRAVITY = 1.0, V_PUMPED = 1.8;
+  let itemizedTotal = 0;
+  const rowsHTML = segments.map(seg=>{
+    const v = seg.pumped ? V_PUMPED : V_GRAVITY;
+    const dia = pipeDiameterMM(seg.Q, v);
+    const length = estimateSegmentLength(seg.area1, seg.area2, seg.fixedLength);
+    const rate = pipeRatePerM(dia, seg.pumped);
+    const pipeCost = Math.round(rate*length);
+    const valveCost = seg.pumped ? (2*isolationValveCost(dia) + checkValveCost(dia)) : (2*isolationValveCost(dia));
+    const valveCount = seg.pumped ? 3 : 2;
+    const segTotal = pipeCost + valveCost;
+    itemizedTotal += segTotal;
+    const label = `${seg.from} → ${seg.to}${seg.branch ? ' (แยกสาย)' : ''}`;
+    return `<tr><td class="label">${label}${seg.pumped ? ' <span style="color:var(--steel-deep);">[ปั๊ม]</span>' : ''}</td><td>${fmt(seg.Q,0)}</td><td>${dia}</td><td>${fmt(length,1)}</td><td>${valveCount}</td><td>${fmtTHB(segTotal)}</td></tr>`;
+  }).join('');
+
+  const tbody = document.querySelector('#pipingBOQTable tbody');
+  if(tbody) tbody.innerHTML = rowsHTML;
+  window.currentPipingItemizedTotal = itemizedTotal;
+}
+
+function renderElectricalBOQ(){
+  const equipRows = Array.from(document.querySelectorAll('#equipList .equip-row')).filter(r=>r.querySelector('input[type=checkbox]').checked);
+  if(equipRows.length === 0) return;
+  const items = equipRows.map(r=>{
+    const name = r.querySelector('.name').textContent.replace('(Option)','').trim();
+    const priceInput = r.querySelector('.price-edit');
+    const price = priceInput ? (parseFloat(priceInput.value)||0) : 0;
+    return {name, price};
+  });
+  const totalEquipPrice = items.reduce((a,i)=>a+i.price,0) || 1;
+
+  const electricityAnnual = (window.opexBreakdown && window.opexBreakdown.electricityAnnual) || 0;
+  const avgPowerKW = electricityAnnual/8760;
+  const DIVERSITY = 1.8;
+  const totalInstalledKW = avgPowerKW*DIVERSITY;
+
+  const footprintItems = window.currentFootprintItems || [];
+  const spacingFactorEl = document.getElementById('spacingFactor');
+  const spacingFactor = spacingFactorEl ? (parseFloat(spacingFactorEl.value)||2.5) : 2.5;
+  const totalBaseArea = footprintItems.reduce((a,f)=>a+f.area,0);
+  const totalSiteArea = totalBaseArea*spacingFactor;
+  const avgCableLength = items.length>0 ? Math.sqrt(Math.max(totalSiteArea,10)/items.length)+5 : 10;
+
+  const V=380, PF=0.85, EFF=0.9;
+  let motorTotal = 0;
+  const motorRowsHTML = items.map(it=>{
+    const kw = (it.price/totalEquipPrice)*totalInstalledKW;
+    const current = (kw*1000)/(Math.sqrt(3)*V*PF*EFF);
+    const cableRatePerM = Math.round(120*Math.pow(Math.max(current,5)/20,0.8));
+    const cableCost = Math.round(cableRatePerM*avgCableLength);
+    const starterCost = Math.round(8000 + kw*2500);
+    const rowTotal = cableCost+starterCost;
+    motorTotal += rowTotal;
+    return `<tr><td class="label">${it.name}</td><td>${fmt(kw,2)}</td><td>${fmtTHB(cableCost)}</td><td>${fmtTHB(starterCost)}</td><td>${fmtTHB(rowTotal)}</td></tr>`;
+  }).join('');
+  const motorTbody = document.querySelector('#motorBOQTable tbody');
+  if(motorTbody) motorTbody.innerHTML = motorRowsHTML;
+
+  const hasAeration = items.some(i=>i.name.includes('เติมอากาศ') || i.name.includes('MBR') || i.name.includes('MBBR'));
+  const hasRO = items.some(i=>i.name.includes('RO'));
+  const majorTankCount = Math.max(footprintItems.length, 1);
+  const Q_forInstruments = parseFloat(document.getElementById('flow').value) || 100;
+  const automationLevel = document.getElementById('automationLevel').value;
+
+  let instruments = [];
+  let controlPanelName = '';
+  let controlPanelCost = 0;
+
+  if(automationLevel === 'basic'){
+    instruments = [
+      {name:'Float Switch ระดับน้ำ (Mechanical) ต่อถังหลัก', qty:majorTankCount, unit:3500}
+    ];
+    controlPanelName = 'ตู้ควบคุม Timer/Relay พื้นฐาน (ไม่มี PLC)';
+    controlPanelCost = Math.round(tierPrice(Q_forInstruments,15000,30000,60000));
+  } else if(automationLevel === 'plc_basic'){
+    instruments = [
+      {name:'Flow Meter ทางเข้า (Magnetic Flow Meter)', qty:1, unit:Math.round(tierPrice(Q_forInstruments,40000,80000,150000))},
+      {name:'Level Sensor (Ultrasonic) ต่อถังหลัก', qty:majorTankCount, unit:Math.round(tierPrice(Q_forInstruments,15000,25000,45000))}
+    ];
+    controlPanelName = 'ตู้ควบคุม PLC พื้นฐาน + จอ HMI ในพื้นที่ (ไม่มี SCADA/เฝ้าระยะไกล)';
+    controlPanelCost = Math.round(tierPrice(Q_forInstruments,50000,100000,180000));
+  } else {
+    instruments = [{name:'Flow Meter ทางเข้า (Magnetic Flow Meter)', qty:1, unit:Math.round(tierPrice(Q_forInstruments,40000,80000,150000))}];
+    if(hasAeration){
+      instruments.push({name:'pH Probe + Transmitter', qty:1, unit:Math.round(tierPrice(Q_forInstruments,30000,60000,100000))});
+      instruments.push({name:'DO Probe + Transmitter', qty:1, unit:Math.round(tierPrice(Q_forInstruments,35000,70000,120000))});
+    }
+    instruments.push({name:'Level Sensor (Ultrasonic) ต่อถังหลัก', qty:majorTankCount, unit:Math.round(tierPrice(Q_forInstruments,15000,25000,45000))});
+    instruments.push({name:'เครื่องวัดคลอรีนคงเหลือ (Residual Chlorine Analyzer)', qty:1, unit:Math.round(tierPrice(Q_forInstruments,45000,90000,150000))});
+    if(hasRO){
+      instruments.push({name:'Flow + Conductivity Meter สาย RO', qty:1, unit:Math.round(tierPrice(Q_forInstruments,35000,70000,120000))});
+    }
+    controlPanelName = 'ตู้ควบคุม PLC + SCADA เต็มรูปแบบ (เฝ้าระยะไกล/บันทึกข้อมูล)';
+    controlPanelCost = Math.round(tierPrice(Q_forInstruments,80000,150000,300000));
+  }
+
+  let instrumentTotal = 0;
+  let instrumentCount = 0;
+  const instrumentRowsHTML = instruments.map(ins=>{
+    const t = ins.qty*ins.unit;
+    instrumentTotal += t;
+    instrumentCount += ins.qty;
+    return `<tr><td class="label">${ins.name}</td><td>${ins.qty}</td><td>${fmtTHB(ins.unit)}</td><td>${fmtTHB(t)}</td></tr>`;
+  }).join('');
+  const instrTbody = document.querySelector('#instrumentBOQTable tbody');
+  if(instrTbody) instrTbody.innerHTML = instrumentRowsHTML;
+
+  const ioCount = automationLevel === 'basic' ? 0 : (items.length*2 + instrumentCount);
+  const plcCost = automationLevel === 'basic' ? controlPanelCost : Math.round(controlPanelCost + ioCount*3000);
+  const lightingCost = Math.round(totalSiteArea*800);
+
+  const miscRowsHTML = [
+    [controlPanelName, automationLevel === 'basic' ? '—' : `${ioCount} I/O points`, fmtTHB(plcCost)],
+    ['ไฟส่องสว่าง + ปลั๊กไฟทั่วไป', `${fmt(totalSiteArea)} m²`, fmtTHB(lightingCost)]
+  ].map(r=>`<tr><td class="label">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+  const miscTbody = document.querySelector('#electricalMiscTable tbody');
+  if(miscTbody) miscTbody.innerHTML = miscRowsHTML;
+
+  window.currentElectricalItemizedTotal = motorTotal + instrumentTotal + plcCost + lightingCost;
+}
+
 function renderEquipmentFlowDiagram(){
   const rows = document.querySelectorAll('#equipList .equip-row');
   const items = [];
@@ -773,6 +976,94 @@ function buildFlowDiagramSVG(trainArr){
 
   svg += `</svg>`;
   return svg;
+}
+
+function parseTHB(text){
+  if(!text) return 0;
+  return Math.round(parseFloat(String(text).replace(/[^\d.-]/g,'')) || 0);
+}
+
+function csvEscape(cell){
+  const s = String(cell);
+  if(s.includes(',') || s.includes('"') || s.includes('\n')){
+    return '"' + s.replace(/"/g,'""') + '"';
+  }
+  return s;
+}
+
+function exportBOQCSV(){
+  const rows = [['ลำดับ','หมวด','รายการ','จำนวน','หน่วย','ราคาต่อหน่วย (บาท)','ราคารวม (บาท)']];
+  let no = 1;
+
+  document.querySelectorAll('#civilTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    const name = tds[0].textContent.trim();
+    const priceInput = r.querySelector('.price-edit');
+    const price = priceInput ? Math.round(parseFloat(priceInput.value)||0) : parseTHB(tds[1].textContent);
+    rows.push([no++, 'งานโยธา (Civil Works)', name, 1, 'รายการ', price, price]);
+  });
+
+  document.querySelectorAll('#equipList .equip-row').forEach(row=>{
+    const chk = row.querySelector('input[type=checkbox]');
+    if(!chk.checked) return;
+    const name = row.querySelector('.name').textContent.replace('(Option)','').trim();
+    const priceInput = row.querySelector('.price-edit');
+    const price = priceInput ? Math.round(parseFloat(priceInput.value)||0) : 0;
+    rows.push([no++, 'เครื่องจักร/อุปกรณ์ไฟฟ้า', name, 1, 'ชุด', price, price]);
+  });
+
+  document.querySelectorAll('#pipingBOQTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    const label = tds[0].textContent.replace('[ปั๊ม]','').trim();
+    const amount = parseTHB(tds[5].textContent);
+    rows.push([no++, 'ท่อ+วาล์ว', label, 1, 'จุดต่อ', amount, amount]);
+  });
+  const miscPct = document.getElementById('pipingMiscPercent').value;
+  const itemizedPiping = window.currentPipingItemizedTotal || 0;
+  const miscCost = Math.round(itemizedPiping * (parseFloat(miscPct)||0)/100);
+  rows.push([no++, 'ท่อ+วาล์ว', `ค่าเผื่อ Fitting/ท่อจิ๊บย่อย (${miscPct}%)`, 1, 'งาน', miscCost, miscCost]);
+
+  document.querySelectorAll('#motorBOQTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    const amount = parseTHB(tds[4].textContent);
+    rows.push([no++, 'ไฟฟ้า/ควบคุม', `มอเตอร์+สาย+Starter: ${tds[0].textContent.trim()}`, 1, 'ชุด', amount, amount]);
+  });
+  document.querySelectorAll('#instrumentBOQTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    const qty = parseInt(tds[1].textContent)||1;
+    const unit = parseTHB(tds[2].textContent);
+    const total = parseTHB(tds[3].textContent);
+    rows.push([no++, 'ไฟฟ้า/ควบคุม', tds[0].textContent.trim(), qty, 'ชุด', unit, total]);
+  });
+  document.querySelectorAll('#electricalMiscTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    const amount = parseTHB(tds[2].textContent);
+    rows.push([no++, 'ไฟฟ้า/ควบคุม', tds[0].textContent.trim(), 1, 'งาน', amount, amount]);
+  });
+  const elecMiscPct = document.getElementById('electricalMiscPercent').value;
+  const itemizedElectrical = window.currentElectricalItemizedTotal || 0;
+  const elecMiscCost = Math.round(itemizedElectrical * (parseFloat(elecMiscPct)||0)/100);
+  rows.push([no++, 'ไฟฟ้า/ควบคุม', `ค่าเผื่อ Earthing/Lightning Protection/สายเสริม (${elecMiscPct}%)`, 1, 'งาน', elecMiscCost, elecMiscCost]);
+
+  document.querySelectorAll('#projectCostTable tbody tr').forEach(r=>{
+    const label = r.querySelector('.label').innerHTML.split('<br>')[0].trim();
+    const pctInput = r.querySelector('.price-edit');
+    const value = parseTHB(r.querySelector('td:last-child').textContent);
+    rows.push([no++, 'ต้นทุนระดับโปรเจค', `${label} (${pctInput.value}%)`, 1, 'งาน', value, value]);
+  });
+
+  const grandTotal = parseTHB(document.getElementById('totalPrice').textContent);
+  rows.push(['', '', '', '', '', '', '']);
+  rows.push(['', '', 'รวมราคาโปรเจคทั้งหมด (CAPEX)', '', '', '', grandTotal]);
+
+  const csvContent = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob(['\ufeff' + csvContent], {type:'text/csv;charset=utf-8;'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'BOQ_wastewater_project.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function downloadSVGAsPNG(containerId, filename){
@@ -885,9 +1176,10 @@ function updateTotal(){
   });
 
   const PIPING_MAINT_RATE = 0.02;
-  const pipingPercentEl = document.getElementById('pipingPercent');
-  const pipingPercent = pipingPercentEl ? (parseFloat(pipingPercentEl.value) || 0) : 0;
-  const pipingCost = equipCapexOnly * (pipingPercent/100);
+  const itemizedPiping = window.currentPipingItemizedTotal || 0;
+  const miscPctEl = document.getElementById('pipingMiscPercent');
+  const miscPct = miscPctEl ? (parseFloat(miscPctEl.value) || 0) : 0;
+  const pipingCost = itemizedPiping * (1 + miscPct/100);
   const pipingMaint = pipingCost * PIPING_MAINT_RATE;
   capexTotal += pipingCost;
   maintTotal += pipingMaint;
@@ -896,10 +1188,12 @@ function updateTotal(){
   if(pipingCostEl) pipingCostEl.textContent = fmtTHB(pipingCost);
   if(pipingMaintEl) pipingMaintEl.textContent = `~${fmtTHB(pipingMaint)}/ปี (${Math.round(PIPING_MAINT_RATE*100)}%)`;
 
+  renderElectricalBOQ();
   const ELECTRICAL_MAINT_RATE = 0.04;
-  const electricalPercentEl = document.getElementById('electricalPercent');
-  const electricalPercent = electricalPercentEl ? (parseFloat(electricalPercentEl.value) || 0) : 0;
-  const electricalCost = equipCapexOnly * (electricalPercent/100);
+  const itemizedElectrical = window.currentElectricalItemizedTotal || 0;
+  const elecMiscPctEl = document.getElementById('electricalMiscPercent');
+  const elecMiscPct = elecMiscPctEl ? (parseFloat(elecMiscPctEl.value) || 0) : 0;
+  const electricalCost = itemizedElectrical * (1 + elecMiscPct/100);
   const electricalMaint = electricalCost * ELECTRICAL_MAINT_RATE;
   capexTotal += electricalCost;
   maintTotal += electricalMaint;
@@ -982,6 +1276,12 @@ function updateNPV(){
 
 function calculate(){
   const Q = parseFloat(document.getElementById('flow').value);
+  if(!automationLevelTouched){
+    const autoLevelEl = document.getElementById('automationLevel');
+    if(Q < 100) autoLevelEl.value = 'basic';
+    else if(Q <= 1000) autoLevelEl.value = 'plc_basic';
+    else autoLevelEl.value = 'full_scada';
+  }
   const BOD = parseFloat(document.getElementById('bod').value);
   const COD = parseFloat(document.getElementById('cod').value);
   const TSS = parseFloat(document.getElementById('tss').value);
@@ -1037,6 +1337,8 @@ function calculate(){
   let equip = [];
   let civilItems = [];
   let footprintItems = [];
+  let pipeSegments = [];
+  let prevStage = {name:'ตะแกรงดักขยะ', area:6};
 
   // Pretreatment
   train.push({t:'ตะแกรงดักขยะ (Bar Screen)', d:'กรองเศษขยะ/ของแข็งขนาดใหญ่ก่อนเข้าระบบ'});
@@ -1046,6 +1348,9 @@ function calculate(){
     badges.push({cls:'amber', txt:'น้ำมัน/ไขมันสูง ต้องดักไขมันก่อน'});
     train.push({t:'บ่อดักไขมัน / DAF (Dissolved Air Flotation)', d:`Oil & Grease ${OIL} mg/L ต้องแยกก่อนเข้าระบบชีวภาพ`});
     equip.push({name:'เครื่อง DAF หรือถังดักไขมัน (Grease Trap)', price: Math.max(80000, Math.round(Q*400)), optional:true, maintRate:0.06, spec:`HRT 20-30 นาที, Air:Solids ratio 0.02-0.03, รองรับ Q ${fmt(Q)} m³/day`});
+    const dafArea = Math.max(Q/50, 8);
+    pipeSegments.push({from:prevStage.name, to:'DAF/บ่อดักไขมัน', area1:prevStage.area, area2:dafArea, Q:Q, pumped:false});
+    prevStage = {name:'DAF/บ่อดักไขมัน', area:dafArea};
   }
 
   // Equalization
@@ -1055,6 +1360,8 @@ function calculate(){
   sizing.push(['ถังปรับสภาพ (EQ Tank)', `${fmt(eqVol)} m³`, `HRT ${eqHRT} ชม.`]);
   civilItems.push({name:'งานโยธาถังปรับสภาพ (EQ Tank)', price: Math.round(eqVol*5000)});
   footprintItems.push({name:'ถังปรับสภาพ (EQ Tank)', area: eqVol/3.5});
+  pipeSegments.push({from:prevStage.name, to:'ถังปรับสภาพ (EQ)', area1:prevStage.area, area2:eqVol/3.5, Q:Q, pumped:false});
+  prevStage = {name:'ถังปรับสภาพ (EQ)', area: eqVol/3.5, pumpOut:true};
   equip.push({name:'เครื่องกวนผสม/เครื่องเติมอากาศในถัง EQ + ปั๊มสูบน้ำเสีย', price: tierPrice(Q,60000,150000,350000), optional:false, maintRate:0.06, spec:`ปริมาตรถัง ${fmt(eqVol)} m³, กำลังเครื่องกวน ~${fmt(eqVol*0.015,1)} kW, ปั๊มสูบ ~${fmt(Q/24,1)} m³/hr`});
 
   if(poorBiodeg){
@@ -1076,6 +1383,8 @@ function calculate(){
     sizing.push(['ถัง UASB', `${fmt(uasbVol)} m³`, `OLR ${uasbOLR} kgCOD/m³·day`]);
     civilItems.push({name:'งานโยธาถัง UASB', price: Math.round(uasbVol*7000)});
     footprintItems.push({name:'ถัง UASB', area: uasbVol/5});
+    pipeSegments.push({from:prevStage.name, to:'ถัง UASB', area1:prevStage.area, area2:uasbVol/5, Q:Q, pumped: !!prevStage.pumpOut});
+    prevStage = {name:'ถัง UASB', area: uasbVol/5};
     equip.push({name:'ถัง UASB พร้อมระบบ Gas Collection และ Biogas Flare/Utilization', price: tierPrice(Q,300000,600000,1200000), optional:false, maintRate:0.05, spec:`OLR ${uasbOLR} kgCOD/m³·day, HRT ${fmt(uasbVol/Q*24,1)} ชม., มีระบบ Flare ความปลอดภัยก๊าซมีเทน`});
     mainProcess = 'uasb+aerobic';
   }
@@ -1091,6 +1400,8 @@ function calculate(){
       sizing.push(['ถังชีวภาพ MBR', `${fmt(vol)} m³`, `HRT ${hrt} ชม., MLSS สูง 8,000–12,000 mg/L`]);
       civilItems.push({name:'งานโยธาถังชีวภาพ MBR', price: Math.round(vol*11000)});
       footprintItems.push({name:'ถังชีวภาพ MBR', area: vol/4});
+      pipeSegments.push({from:prevStage.name, to:'ถังชีวภาพ MBR', area1:prevStage.area, area2:vol/4, Q:Q, pumped: !!prevStage.pumpOut});
+      prevStage = {name:'ถังชีวภาพ MBR', area: vol/4, pumpOut:true};
       equip.push({name:'ชุดเมมเบรน MBR (Membrane Module) + เครื่องเติมอากาศ + ปั๊ม Permeate', price: tierPrice(Q,400000,900000,2200000), optional:false, maintRate:0.12, spec:`พื้นที่เมมเบรนโดยประมาณ ~${fmt(Q*1000/24/15,0)} m² (Flux 15 LMH), รูกรอง UF/MF 0.03-0.4 micron`});
       usingMBR = true;
       if(!highStrength){ mainProcess = 'mbr'; } else { mainProcess += '+mbr_polish'; }
@@ -1102,6 +1413,8 @@ function calculate(){
       sizing.push(['ถังชีวภาพ MBBR', `${fmt(vol)} m³`, `HRT ${hrt} ชม. (โดยประมาณ)`]);
       civilItems.push({name:'งานโยธาถังชีวภาพ MBBR', price: Math.round(vol*7500)});
       footprintItems.push({name:'ถังชีวภาพ MBBR', area: vol/4.5});
+      pipeSegments.push({from:prevStage.name, to:'ถังชีวภาพ MBBR', area1:prevStage.area, area2:vol/4.5, Q:Q, pumped: !!prevStage.pumpOut});
+      prevStage = {name:'ถังชีวภาพ MBBR', area: vol/4.5};
       equip.push({name:'ตัวกลาง MBBR (Media) + เครื่องเติมอากาศ (Blower/Diffuser)', price: tierPrice(Q,180000,450000,1000000), optional:false, maintRate:0.06, spec:'สัดส่วนตัวกลาง 40-60% ของปริมาตรถัง, พื้นที่ผิวจำเพาะ 500-800 m²/m³'});
       if(!highStrength){ mainProcess = 'mbbr'; } else { mainProcess += '+mbbr_polish'; }
     }
@@ -1113,12 +1426,17 @@ function calculate(){
     sizing.push(['ถังเติมอากาศ (Aeration Tank)', `${fmt(asVol)} m³`, `F/M ${FM} kgBOD/kgMLSS·day, MLSS ${MLSS*1000} mg/L`]);
     civilItems.push({name:'งานโยธาถังเติมอากาศ', price: Math.round(asVol*5000)});
     footprintItems.push({name:'ถังเติมอากาศ (AS)', area: asVol/4.5});
+    pipeSegments.push({from:prevStage.name, to:'ถังเติมอากาศ (AS)', area1:prevStage.area, area2:asVol/4.5, Q:Q, pumped: !!prevStage.pumpOut});
+    prevStage = {name:'ถังเติมอากาศ (AS)', area: asVol/4.5};
     equip.push({name:'เครื่องเติมอากาศ (Blower + Diffuser หรือ Surface Aerator)', price: tierPrice(Q,150000,400000,900000), optional:false, maintRate:0.06, spec:'อัตราลมโดยประมาณ 1.0-1.5 Nm³ อากาศ/m³น้ำเสีย/ชม. (ค่าแม่นยำดูในโหมดวิศวกร)'});
     const clarArea = Q/P_slr;
     train.push({t:'ถังตกตะกอน (Secondary Clarifier)', d:'แยกตะกอนจุลินทรีย์ออกจากน้ำใส ก่อนปล่อยหรือบำบัดต่อ'});
     sizing.push(['ถังตกตะกอนที่ 2', `${fmt(clarArea)} m²`, `Surface Loading Rate ${P_slr} m³/m²·day`]);
     civilItems.push({name:'งานโยธาถังตกตะกอน', price: Math.round(clarArea*8000)});
     footprintItems.push({name:'ถังตกตะกอน (Clarifier)', area: clarArea});
+    pipeSegments.push({from:prevStage.name, to:'ถังตกตะกอน (Clarifier)', area1:prevStage.area, area2:clarArea, Q:Q, pumped:false});
+    pipeSegments.push({from:'ถังตกตะกอน (Clarifier)', to:'ถังเติมอากาศ (AS) — RAS Return', area1:clarArea, area2:asVol/4.5, Q:Q, pumped:true});
+    prevStage = {name:'ถังตกตะกอน (Clarifier)', area: clarArea};
     equip.push({name:'เครื่องกวาดตะกอน (Sludge Scraper) + ปั๊ม Return Sludge (RAS)', price: tierPrice(Q,150000,350000,700000), optional:false, maintRate:0.06, spec:`SLR ${P_slr} m³/m²·day, พื้นที่ผิว ${fmt(clarArea)} m², RAS pump 50-100% ของ Q`});
     if(!highStrength){ mainProcess = 'as'; } else { mainProcess += '+as_polish'; }
   }
@@ -1130,6 +1448,8 @@ function calculate(){
     sizing.push(['ถังกรองทราย', `พื้นที่กรอง ${fmt(Q/120,1)} m²`, 'Filtration Rate 120 m³/m²·day']);
     civilItems.push({name:'งานโยธาถังกรองทราย', price: Math.round((Q/120)*10000)});
     footprintItems.push({name:'ถังกรองทราย', area: Q/120});
+    pipeSegments.push({from:prevStage.name, to:'ถังกรองทราย', area1:prevStage.area, area2:Q/120, Q:Q, pumped:true});
+    prevStage = {name:'ถังกรองทราย', area: Q/120};
     equip.push({name:'ถังกรองทราย/คาร์บอน + ระบบล้างย้อน (Backwash)', price: tierPrice(Q,80000,180000,350000), optional:true, maintRate:0.05, spec:'Filtration rate 120 m³/m²·day, Backwash rate 15-20 m³/m²·hr'});
   } else if(strict && usingMBR){
     badges.push({cls:'sage', txt:'ใช้ MBR อยู่แล้ว — เมมเบรนกรองคุณภาพน้ำออกได้ตามมาตรฐานเข้มงวดโดยไม่ต้องมีถังกรองทรายเพิ่ม'});
@@ -1146,6 +1466,7 @@ function calculate(){
 
     equip.push({name:'ถังคาร์บอนกรองกลิ่น/สี (Activated Carbon Filter) — สำหรับ reuse ทั่วไป เช่น รดน้ำต้นไม้/ล้างพื้น', price: tierPrice(Math.max(Q_toRO,1),100000,250000,600000), optional:true, maintRate:0.08, spec:`Empty Bed Contact Time (EBCT) 15-20 นาที, รองรับ ${fmt(Q_toRO)} m³/day`});
     equip.push({name:`ชุด RO (Reverse Osmosis) — ขนาดตามน้ำที่ส่งเข้า RO จริง ${fmt(roPercent,0)}% ของ Q (${fmt(Q_toRO)} m³/day) — สำหรับ reuse ที่ต้องการความบริสุทธิ์สูง เช่น น้ำป้อนหม้อไอน้ำ/กระบวนการผลิต`, price: tierPrice(Math.max(Q_toRO,1),300000,800000,2000000), optional:true, maintRate:0.10, spec:`Recovery ~${fmt(100-rejectPercent,0)}%, TDS Rejection &gt;95%, เมมเบรน Brackish Water RO (BWRO), รองรับ ${fmt(Q_toRO)} m³/day`});
+    pipeSegments.push({from:prevStage.name+' (แยกสาย Reuse)', to:'ระบบ Carbon/RO', area1:prevStage.area, area2:Math.max(Q_toRO/50,6), Q:Q_toRO, pumped:true, branch:true});
 
     train.push({t:'จัดการน้ำ Reject จากระบบ RO', d:`น้ำบำบัดแล้ว ${fmt(roPercent,0)}% (${fmt(Q_toRO)} m³/day) ถูกส่งเข้า RO — ในจำนวนนี้ ${fmt(rejectPercent,0)}% (${fmt(Q_reject)} m³/day) จะออกมาเป็น Reject ที่มีความเค็ม/TDS เข้มข้นสูง ไม่ควรวนกลับเข้าระบบชีวภาพ ต้องจัดการแยกต่างหาก (ปล่อยท่อรวมถ้าเกลือไม่เกินมาตรฐาน / ส่งกำจัดภายนอก / ระบบ Zero Liquid Discharge)`});
     badges.push({cls:'rust', txt:`RO จะสร้างน้ำ Reject ประมาณ ${fmt(Q_reject)} m³/day (ความเค็มสูง) — ต้องวางแผนกำจัดแยกต่างหาก ไม่สามารถวนกลับเข้าระบบชีวภาพได้`});
@@ -1193,8 +1514,11 @@ function calculate(){
   }
 
   train.push({t:'ระบบฆ่าเชื้อ (Disinfection)', d: wwType==='hospital' ? 'จำเป็นอย่างยิ่งสำหรับน้ำเสียโรงพยาบาล เพื่อกำจัดเชื้อโรค' : 'ฆ่าเชื้อก่อนปล่อยทิ้งตามมาตรฐาน'});
-  footprintItems.push({name:'ถังสัมผัสคลอรีน (Disinfection, HRT 30 นาที)', area: (Q*(0.5/24))/2});
+  const disinfectArea = (Q*(0.5/24))/2;
+  footprintItems.push({name:'ถังสัมผัสคลอรีน (Disinfection, HRT 30 นาที)', area: disinfectArea});
   footprintItems.push({name:'จุดตะแกรงดักขยะ + ทางเดินเข้าถึง (โดยประมาณ)', area: 6});
+  pipeSegments.push({from:prevStage.name, to:'ถังสัมผัสคลอรีน (Disinfection)', area1:prevStage.area, area2:disinfectArea, Q:Q, pumped: !!prevStage.pumpOut});
+  pipeSegments.push({from:'ถังสัมผัสคลอรีน (Disinfection)', to:'จุดปล่อยทิ้ง (Discharge Point)', area1:disinfectArea, area2:disinfectArea, Q:Q, pumped:false, fixedLength:15});
   equip.push({
     name: wwType==='hospital' ? 'ระบบคลอรีน + ถังสัมผัสคลอรีน (Chlorine Contact Tank) หรือ UV' : 'ถังสัมผัสคลอรีน (Chlorine Contact Tank)',
     price: wwType==='hospital' ? tierPrice(Q,150000,350000,700000) : tierPrice(Q,40000,100000,250000),
@@ -1280,8 +1604,10 @@ function calculate(){
     <div class="note" style="margin-top:8px; background:var(--sage-bg); border-left-color:var(--sage);"><strong>ที่มาของตัวเลขตะกอน:</strong><br>${sludgeFormulaParts.join('<br>')}</div>
   `;
   civilItems.push({name:'งานโยธาถังพักตะกอน', price: Math.max(50000, Math.round(sludgeM3Day*3*5000))});
-  footprintItems.push({name:'ถังพักตะกอน', area: Math.max(sludgeM3Day*3, 10)/3});
+  const sludgeTankArea = Math.max(sludgeM3Day*3, 10)/3;
+  footprintItems.push({name:'ถังพักตะกอน', area: sludgeTankArea});
   equip.push({name:'ถังพักตะกอน (Sludge Holding Tank) + ปั๊มตะกอน', price: Math.max(40000, Math.round(sludgeM3Day*3*3000)), optional:false, maintRate:0.06, spec:`HRT 3 วัน, ปริมาตร ${fmt(sludgeM3Day*3)} m³`});
+  pipeSegments.push({from:prevStage.name+' (สาย WAS)', to:'ถังพักตะกอน', area1:prevStage.area, area2:sludgeTankArea, Q:Math.max(sludgeM3Day,1), pumped:true, branch:true});
 
   let dewaterPrice;
   if(dewater.name.includes('Filter Press')) dewaterPrice = tierPrice(sludgeKgDay,500000,900000,1500000);
@@ -1301,6 +1627,9 @@ function calculate(){
     defaultChecked: dewateringMachineNeeded,
     spec: `ความสามารถ ~${fmt(sludgeKgDay/8,1)} kgDS/hr (เดินเครื่อง 8 ชม./วัน), %Solids หลังรีด ${dewater.solids}`
   });
+  if(dewateringMachineNeeded){
+    pipeSegments.push({from:'ถังพักตะกอน', to:'เครื่องรีดตะกอน', area1:sludgeTankArea, area2:4, Q:Math.max(sludgeM3Day,1), pumped:true, branch:true});
+  }
 
   // --- Annual OPEX estimate: electricity, chemicals, labor ---
   const ELEC_RATE = 4.5; // THB/kWh, typical Thai industrial rate
@@ -1487,6 +1816,7 @@ function calculate(){
     </div>
   `).join('');
   renderEquipmentFlowDiagram();
+  renderPipingBOQ(pipeSegments);
 
   // Render OPEX table (electricity, chemicals, labor)
   const opex = window.opexBreakdown;
@@ -1559,10 +1889,30 @@ function buildReportText(){
     const spec = specEl ? textOf(specEl) : '';
     lines.push(`- [${chk.checked ? 'x' : ' '}] ${name}: ${price} / ${maint}${spec ? ' | สเปค: '+spec : ''}`);
   });
-  const pipingPct = textOf(document.getElementById('pipingPercent'));
-  lines.push(`- ค่าท่อ+ติดตั้ง (${pipingPct}% ของอุปกรณ์ที่เลือก): ${textOf(document.getElementById('pipingCostDisplay'))} / ${textOf(document.getElementById('pipingMaintDisplay'))}`);
-  const electricalPct = textOf(document.getElementById('electricalPercent'));
-  lines.push(`- ค่าไฟฟ้า/ควบคุม (${electricalPct}% ของอุปกรณ์ที่เลือก): ${textOf(document.getElementById('electricalCostDisplay'))} / ${textOf(document.getElementById('electricalMaintDisplay'))}`);
+  lines.push('');
+  lines.push('รายละเอียดงานท่อและวาล์ว (Piping BOQ):');
+  document.querySelectorAll('#pipingBOQTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${tds[0].textContent.trim()}: Q=${tds[1].textContent}m³/day, Dia=${tds[2].textContent}mm, ยาว=${tds[3].textContent}m, วาล์ว=${tds[4].textContent}, รวม=${tds[5].textContent}`);
+  });
+  lines.push(`- ค่าเผื่อ Fitting/ท่อจิ๊บย่อย (${textOf(document.getElementById('pipingMiscPercent'))}%)`);
+  lines.push(`รวมค่าท่อ+วาล์ว+ติดตั้ง: ${textOf(document.getElementById('pipingCostDisplay'))} / ${textOf(document.getElementById('pipingMaintDisplay'))}`);
+  lines.push('');
+  lines.push('รายละเอียดงานไฟฟ้า/ควบคุม (Electrical BOQ):');
+  document.querySelectorAll('#motorBOQTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${tds[0].textContent.trim()}: ${tds[1].textContent}kW, สาย=${tds[2].textContent}, Starter=${tds[3].textContent}, รวม=${tds[4].textContent}`);
+  });
+  document.querySelectorAll('#instrumentBOQTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${tds[0].textContent.trim()}: จำนวน ${tds[1].textContent}, ${tds[2].textContent}/ชุด, รวม=${tds[3].textContent}`);
+  });
+  document.querySelectorAll('#electricalMiscTable tbody tr').forEach(r=>{
+    const tds = r.querySelectorAll('td');
+    lines.push(`- ${tds[0].textContent.trim()}: ${tds[2].textContent}`);
+  });
+  lines.push(`- ค่าเผื่อ Earthing/Lightning Protection/สายเสริม (${textOf(document.getElementById('electricalMiscPercent'))}%)`);
+  lines.push(`รวมค่าไฟฟ้า/ควบคุม: ${textOf(document.getElementById('electricalCostDisplay'))} / ${textOf(document.getElementById('electricalMaintDisplay'))}`);
   lines.push('');
   lines.push('ต้นทุนระดับโปรเจค (Project-level Costs):');
   document.querySelectorAll('#projectCostTable tbody tr').forEach(r=>{
@@ -1654,9 +2004,17 @@ function buildReportHTML(){
       const specText = specEl ? `<br><span style="font-size:12px; color:#5B6B72;">${specEl.innerHTML}</span>` : '';
       return `<li>${r.querySelector('.name').textContent.replace('(Option)','').trim()} — ${price} / ${maint}${specText}</li>`;
     }).join('')}
-    <li>ค่าท่อ+ติดตั้ง (${document.getElementById('pipingPercent').value}% ของอุปกรณ์ที่เลือก) — ${document.getElementById('pipingCostDisplay').textContent} / ${document.getElementById('pipingMaintDisplay').textContent}</li>
-    <li>ค่าไฟฟ้า/ควบคุม (${document.getElementById('electricalPercent').value}% ของอุปกรณ์ที่เลือก) — ${document.getElementById('electricalCostDisplay').textContent} / ${document.getElementById('electricalMaintDisplay').textContent}</li>
     </ul>
+    <h2>รายละเอียดงานท่อและวาล์ว (Piping BOQ)</h2>
+    <table>${document.getElementById('pipingBOQTable').innerHTML}</table>
+    <p style="font-size:11px; color:#5B6B72;">ค่าเผื่อ Fitting/ท่อจิ๊บย่อย: ${document.getElementById('pipingMiscPercent').value}%</p>
+    <p style="font-weight:600; font-size:14px; border-top:2px solid #1F2C33; padding-top:8px;">รวมค่าท่อ+วาล์ว+ติดตั้ง: ${document.getElementById('pipingCostDisplay').textContent} / ${document.getElementById('pipingMaintDisplay').textContent}</p>
+    <h2>รายละเอียดงานไฟฟ้า/ควบคุม (Electrical BOQ)</h2>
+    <table>${document.getElementById('motorBOQTable').innerHTML}</table>
+    <table>${document.getElementById('instrumentBOQTable').innerHTML}</table>
+    <table>${document.getElementById('electricalMiscTable').innerHTML}</table>
+    <p style="font-size:11px; color:#5B6B72;">ค่าเผื่อ Earthing/Lightning Protection/สายเสริม: ${document.getElementById('electricalMiscPercent').value}%</p>
+    <p style="font-weight:600; font-size:14px; border-top:2px solid #1F2C33; padding-top:8px;">รวมค่าไฟฟ้า/ควบคุม: ${document.getElementById('electricalCostDisplay').textContent} / ${document.getElementById('electricalMaintDisplay').textContent}</p>
     <h2>แผนภาพกระบวนการ (Process Flow Diagram)</h2>
     <div style="text-align:center;">${document.getElementById('flowDiagram').innerHTML}</div>
     <p style="font-size:11px; color:#5B6B72;">แผนภาพนี้สร้างจากรายการเครื่องจักร/อุปกรณ์ที่เลือกไว้ข้างต้น</p>
